@@ -21,6 +21,9 @@ clean:
 run: all
 	$(ERL_CMD) -noshell -s griffin start
 
+shell: all
+	$(ERL_CMD) -s griffin start
+
 test: all
 	$(ERL_CMD) -noshell -s griffin_test test -s erlang halt
 
