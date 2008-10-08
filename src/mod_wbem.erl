@@ -20,8 +20,8 @@ cimxml_request(Doc) ->
         {error, {_ErrorType, _Description}} ->
             %% TODO: return error reason in HTTP header
             cimxml_request_not_valid();
-        RequestTT ->
-            cixml_request_not_valid()
+        _RequestTT ->
+            cimxml_request_not_valid()
     end.
 
 %% Return a tuple of {Status, Headers, Body} for the incoming request
