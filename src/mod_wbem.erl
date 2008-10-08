@@ -6,22 +6,26 @@
 
 %% Parsing and validation of request
 
-cimxml_request_not_well_formed() ->
-    {400, [{"CIMError", "request-not-well-formed"}], ""}.
+cimxml_request_not_well_formed(Reason) ->
+    {400, 
+     [{"CIMError", "request-not-well-formed"}, 
+      {"GriffinErrorDetail", lists:flatten(io_lib:format("~w", [Reason]))}], 
+     ""}.
 
-cimxml_request_not_valid() ->
-    {400, [{"CIMError", "request-not-valid"}], ""}.
+cimxml_request_not_valid(Reason) ->
+    {400, 
+     [{"CIMError", "request-not-valid"}, 
+      {"GriffinErrorDetail", lists:flatten(io_lib:format("~w", [Reason]))}], 
+     ""}.
 
 cimxml_request(Doc) ->
     case (catch cimxml_parse:doc(Doc)) of
-        {'EXIT', _Reason} ->
-            %% TODO: return error reason in HTTP header
-            cimxml_request_not_well_formed();
-        {error, {_ErrorType, _Description}} ->
-            %% TODO: return error reason in HTTP header
-            cimxml_request_not_valid();
-        _RequestTT ->
-            cimxml_request_not_valid()
+        {'EXIT', Reason} ->
+            cimxml_request_not_valid(Reason);
+        {error, {Type, Reason}} ->
+            cimxml_request_not_valid({Type, Reason});
+        RequestTT ->
+            cimxml_request_not_valid("unimplemented")
     end.
 
 %% Return a tuple of {Status, Headers, Body} for the incoming request
@@ -29,10 +33,8 @@ cimxml_request(Doc) ->
 
 do(_Headers, Body) ->
     case (catch xmerl_scan:string(Body, [{quiet, true}])) of
-        {'EXIT', {fatal, _XmlError}} ->
-            cimxml_request_not_well_formed();
-        {'EXIT', _XmlError} ->
-            cimxml_request_not_well_formed();
+        {'EXIT', {fatal, XmlError}} ->
+            cimxml_request_not_well_formed(XmlError);
         {Doc, _Trailer} ->
             cimxml_request(Doc)
     end.
