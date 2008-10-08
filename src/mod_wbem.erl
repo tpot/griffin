@@ -42,7 +42,7 @@ do(_Headers, Body) ->
 do(Info) ->
     case Info#mod.method of
         "POST" ->
-            {tatus, Headers, Body} = 
+            {Status, Headers, Body} = 
                 do(Info#mod.parsed_header, Info#mod.entity_body),
             Length = integer_to_list(httpd_util:flatlength(Body)),
             Head = [{code, Status},
