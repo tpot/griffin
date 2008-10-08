@@ -1,6 +1,6 @@
 -module(mod_wbem).
 
--export([do/1]).
+-export([do/1, do/2]).
 
 -include_lib("inets/src/httpd.hrl").
 
@@ -13,7 +13,7 @@ cimxml_request_not_valid() ->
     {400, [{"CIMError", "request-not-valid"}], ""}.
 
 cimxml_request(Doc) ->
-    case (catch cimxml_parse:parse_xml(Doc)) of
+    case (catch cimxml_parse:doc(Doc)) of
         {'EXIT', _Reason} ->
             %% TODO: return error reason in HTTP header
             cimxml_request_not_well_formed();
