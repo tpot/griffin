@@ -16,6 +16,7 @@ $(EBIN_DIR)/%.beam: $(SOURCE_DIR)/%.erl
 
 clean:
 	rm -f $(TARGETS)
+	rm -f erl_crash.dump
 
 run: all
 	$(ERL_CMD) -noshell -s griffin start
