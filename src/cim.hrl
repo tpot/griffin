@@ -17,3 +17,129 @@
 -define(CIM_ERR_INVALID_QUERY, 15).
 -define(CIM_ERR_METHOD_NOT_AVAILABLE, 16).
 -define(CIM_ERR_METHOD_NOT_FOUND, 17).
+
+%% CIM objects
+
+-record(instancename, {
+	  classname,
+	  keybindings = [],
+	  host,
+	  namespace
+	 }).
+
+-record(keybinding, {
+	  name,
+	  value
+	 }).
+
+-record(keyvalue, {
+	  valuetype,
+	  cimtype,
+	  value
+	 }).
+
+-record(instance, {
+	  classname,
+	  path,
+	  qualifiers = [],
+	  properties = []
+	 }).
+
+-record(property, {
+	  name,
+	  classorigin,
+	  propagated,
+	  type,
+      qualifiers = [],
+	  value
+	 }).
+
+-record(property_array, {
+	  name,
+	  type,
+	  arraysize,
+	  classorigin,
+	  propagated,
+	  qualifiers = [],
+	  value
+	 }).
+
+-record(property_reference, {
+	  name,
+	  referenceclass,
+	  classorigin,
+	  propagated,
+	  qualifiers = [],
+	  value
+	 }).
+
+-record(qualifier, {
+	  name,
+	  value,
+      type,
+	  propagated,
+	  overridable,
+	  tosubclass,
+	  toinstance,
+	  translatable
+	 }).
+
+-record(qualifier_declaration, {
+	  name,
+	  type,
+	  scope = [],
+	  value,
+	  isarray,
+	  arraysize,
+	  overridable,
+      tosubclass,
+      toinstance,
+      translatable
+	 }).
+
+-record(class, {
+      name,
+      superclass,
+      qualifiers = [],
+      properties = [],
+      methods = []
+     }).
+
+-record(classname, {
+      name
+     }).
+
+-record(method, {
+      name,
+      type,
+      classorigin,
+      propagated,
+      qualifiers = [],
+      parameters = []
+     }).
+
+-record(parameter_reference, {
+      name,
+      referenceclass,
+      qualifiers = []
+     }).
+
+-record(parameter_array, {
+      name,
+      type,
+      arraysize,
+      qualifiers = []
+     }).
+
+-record(parameter, {
+      name,
+      type,
+      qualifiers = []
+     }).
+
+-record(parameter_refarray, {
+      name,
+      referenceclass,
+      arraysize,
+      qualifiers = []
+     }).   
