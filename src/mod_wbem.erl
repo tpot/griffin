@@ -281,6 +281,211 @@ from_term(Term) ->
 
 %% Execute an intrinsic method
 
+imethod("EnumerateInstanceNames", NameSpace, Params) ->
+    case proplists:split(Params, ["ClassName"]) of
+        {[[{_, ClassName}]], []} ->
+            gen_server:call(
+              cimomhandle, 
+              {enumerateInstanceNames, NameSpace, 
+               ClassName#instancename.classname});
+        _ ->
+            {error, {?CIM_ERR_INVALID_PARAMETER}}
+    end;
+
+imethod("EnumerateInstances", NameSpace, Params) ->
+    LocalOnly = proplists:get_value(Params, "LocalOnly", "true"),
+    DeepInheritance = proplists:get_value(Params, "DeepInheritance", "false"),
+    IncludeQualifiers = 
+        proplists:get_value(Params, "IncludeQualifiers", "true"),
+    IncludeClassOrigin = 
+        proplists:get_value(Params, "IncludeClassOrigin", "false"),
+    PropertyList = proplists:get_value(Params, "PropertyList", []),
+    case proplists:split(Params, ["ClassName", "LocalOnly", "DeepInheritance",
+                                  "IncludeQualifiers", "IncludeClassOrigin", 
+                                  "PropertyList"]) of
+        {[[{_, ClassName}], _, _, _, _, _], []} ->
+            gen_server:call(
+              cimomhandle,
+              {enumerateInstances, NameSpace, ClassName, LocalOnly, 
+               DeepInheritance, IncludeQualifiers, IncludeClassOrigin, 
+               PropertyList});
+        _ ->
+            {error, {?CIM_ERR_INVALID_PARAMETER}}
+    end;
+
+imethod("GetInstance", NameSpace, Params) ->
+    LocalOnly = proplists:get_value(Params, "LocalOnly", "true"),
+    IncludeQualifiers = 
+        proplists:get_value(Params, "IncludeQualifiers", "false"),
+    IncludeClassOrigin = 
+        proplists:get_value(Params, "IncludeClassOrigin", "false"),
+    PropertyList = proplists:get_value(Params, "PropertyList", []),
+    case proplists:split(Params, ["InstanceName", "LocalOnly", 
+                                  "IncludeQualifiers", "IncludeClassOrigin", 
+                                  "PropertyList"]) of
+        {[[{_, InstanceName}], _, _, _, _], []} ->
+            gen_server:call(
+              cimomhandle,
+              {getInstance, NameSpace, InstanceName, LocalOnly, 
+               IncludeQualifiers, IncludeClassOrigin, PropertyList});
+        _ ->
+            {error, {?CIM_ERR_INVALID_PARAMETER}}
+    end;    
+
+imethod("CreateInstance", NameSpace, Params) ->
+    case proplists:split(Params, ["NewInstance"]) of
+        {[[{_, NewInstance}]], []} ->
+            gen_server:call(
+              cimomhandle,
+              {createInstance, NameSpace, NewInstance});
+        _ ->
+            from_term({error, {?CIM_ERR_INVALID_PARAMETER}})
+    end;
+
+imethod("DeleteInstance", NameSpace, Params) ->
+    case proplists:split(Params, ["InstanceName"]) of
+        {[[{_, InstanceName}]], []} ->
+            gen_server:call(
+              cimomhandle,
+              {deleteInstance, NameSpace, InstanceName});
+        _ ->
+            from_term({error, {?CIM_ERR_INVALID_PARAMETER}})
+    end;
+
+imethod("ModifyInstance", NameSpace, Params) ->
+    IncludeQualifiers = 
+        proplists:get_value(Params, "IncludeQualifiers", "false"),
+    PropertyList = proplists:get_value(Params, "PropertyList", []),
+    case proplists:split(Params, ["ModifiedInstance", "IncludeQualifiers",
+                                  "PropertyList"]) of
+        {[[{_, ModifiedInstance}], _, _], []} ->
+            gen_server:call(
+              cimomhandle,
+              {modifyInstance, NameSpace, ModifiedInstance, IncludeQualifiers,
+               PropertyList});
+        _ ->
+            {error, {?CIM_ERR_INVALID_PARAMETER}}
+    end;
+
+imethod("SetQualifier", NameSpace, Params) ->
+    case proplists:split(Params, ["QualifierDeclaration"]) of
+        {[[{_, QualifierDeclaration}]], []} ->
+            gen_server:call(
+              cimomhandle, 
+              {setQualifier, NameSpace, QualifierDeclaration});
+        _ -> 
+            from_term({error, {?CIM_ERR_INVALID_PARAMETER}})
+    end;
+
+imethod("EnumerateQualifiers", NameSpace, Params) ->
+    case proplists:split(Params, []) of
+        {[], []} ->
+            gen_server:call(
+              cimomhandle, 
+              {enumerateQualifiers, NameSpace});
+        _ -> 
+            {error, {?CIM_ERR_INVALID_PARAMETER}}
+    end;
+
+imethod("GetQualifier", NameSpace, Params) ->
+    case proplists:split(Params, ["QualifierName"]) of
+        {[[{_, QualifierName}]], []} ->
+            gen_server:call(
+              cimomhandle, {getQualifier, NameSpace, QualifierName});
+        _ -> 
+            {error, {?CIM_ERR_INVALID_PARAMETER}}
+    end;
+
+imethod("DeleteQualifier", NameSpace, Params) ->
+    case proplists:split(Params, ["QualifierName"]) of
+        {[[{_, QualifierName}]], []} ->
+            gen_server:call(
+              cimomhandle, {deleteQualifier, NameSpace, QualifierName});
+        _ -> 
+            {error, {?CIM_ERR_INVALID_PARAMETER}}
+    end;
+
+imethod("GetClass", NameSpace, Params) ->
+    LocalOnly = proplists:get_value(Params, "LocalOnly", "true"),
+    IncludeQualifiers = 
+        proplists:get_value(Params, "IncludeQualifiers", "true"),
+    IncludeClassOrigin = 
+        proplists:get_value(Params, "IncludeClassOrigin", "false"),
+    PropertyList = proplists:get_value(Params, "PropertyList", []),
+    case proplists:split(Params, ["ClassName", "LocalOnly", 
+                                  "IncludeQualifiers", "IncludeClassOrigin", 
+                                  "PropertyList"]) of
+        {[[{_, ClassName}], _, _, _, _], []} ->
+            gen_server:call(
+              cimomhandle, 
+              {getClass, NameSpace, 
+               ClassName#instancename.classname, LocalOnly, 
+               IncludeQualifiers, IncludeClassOrigin, 
+               PropertyList});
+        _ ->
+            {error, {?CIM_ERR_INVALID_PARAMETER}}
+    end;
+
+imethod("DeleteClass", NameSpace, Params) ->
+    case proplists:split(Params, ["ClassName"]) of
+        {[[{_, ClassName}]], []} ->
+            gen_server:call(
+              cimomhandle, 
+              {deleteClass, NameSpace, ClassName#instancename.classname});
+        _ -> 
+            {error, {?CIM_ERR_INVALID_PARAMETER}}
+    end;
+
+imethod("CreateClass", NameSpace, Params) ->
+    case proplists:split(Params, ["NewClass"]) of
+        {[[{_, NewClass}]], []} ->
+            gen_server:call(
+              cimomhandle, {createClass, NameSpace, NewClass});
+        _ -> 
+            {error, {?CIM_ERR_INVALID_PARAMETER}}
+    end;
+
+imethod("ModifyClass", NameSpace, Params) ->
+    case proplists:split(Params, ["ModifiedClass"]) of
+        {[[{_, ModifiedClass}]], []} ->
+            gen_server:call(
+              cimomhandle, {createClass, NameSpace, ModifiedClass});
+        _ -> 
+            {error, {?CIM_ERR_INVALID_PARAMETER}}
+    end;
+
+imethod("EnumerateClasses", NameSpace, Params) ->
+    ClassName = proplists:get_value(Params, "ClassName", undefined),
+    DeepInheritance = proplists:get_value(Params, "DeepInheritance", "false"),
+    LocalOnly = proplists:get_value(Params, "LocalOnly", "true"),
+    IncludeQualifiers = 
+        proplists:get_value(Params, "IncludeQualifiers", "true"),
+    IncludeClassOrigin = 
+        proplists:get_value(Params, "IncludeClassOrigin", "false"),
+    case proplists:split(Params, ["ClassName", "DeepInheritance",
+                                  "LocalOnly", "IncludeQualifiers",
+                                  "IncludeClassOrigin"]) of
+        {_, []} ->
+            gen_server:call(
+              cimomhandle, {enumerateClasses, NameSpace, ClassName, 
+                            DeepInheritance, LocalOnly, IncludeQualifiers,
+                            IncludeClassOrigin});
+        _ ->
+            {error, {?CIM_ERR_INVALID_PARAMETER}}
+    end;
+
+imethod("EnumerateClassNames", NameSpace, Params) ->
+    ClassName = proplists:get_value(Params, "ClassName", undefined),
+    DeepInheritance = proplists:get_value(Params, "DeepInheritance", "false"),
+    case proplists:split(Params, ["ClassName", "DeepInheritance"]) of
+        {_, []} ->
+            gen_server:call(
+              cimomhandle, {enumerateClassNames, NameSpace, ClassName, 
+                            DeepInheritance});
+        _ ->
+            {error, {?CIM_ERR_INVALID_PARAMETER}}
+    end;
+
 imethod(MethodName, _NameSpace, _Params) ->
     {error, {?CIM_ERR_INVALID_PARAMETER, 
              io_lib:format("Unknown method \"~s\"", [MethodName])}}.
@@ -336,11 +541,10 @@ cimxml_request(Doc) ->
             cimxml_request_not_valid();
         RequestTT ->
             case (catch exec(RequestTT)) of
+                %% TODO: Should return CIM_ERR_FAILED and detailed status
                 {'EXIT', _Reason} ->
-                    %% TODO: return error reason in HTTP header
                     cimxml_request_not_valid();
                 {error, _Description} ->
-                    %% TODO: return error reason in HTTP header
                     cimxml_request_not_valid();
                 ResponseTT -> 
                     cimxml_request_good(ResponseTT) 
