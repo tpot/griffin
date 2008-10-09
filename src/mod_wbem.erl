@@ -131,50 +131,53 @@ to_term({'PROPERTY.REFERENCE', Attrs, Children}) ->
     Qualifiers = lists:filter(
                    fun({Tag, _, _}) -> Tag == 'QUALIFIER' end, 
                    Children),
-    #property_reference{
-                               name = proplists:get_value(?NAME, Attrs),
-                               referenceclass = proplists:get_value(?REFERENCECLASS, Attrs),
-                               classorigin = proplists:get_value(?CLASSORIGIN, Attrs),
-                               propagated = proplists:get_value(?PROPAGATED, Attrs),
-                               qualifiers = lists:map(fun(X) -> to_term(X) end, Qualifiers)};
+    #property_reference{name = proplists:get_value(?NAME, Attrs),
+                        referenceclass = 
+                        proplists:get_value(?REFERENCECLASS, Attrs),
+                        classorigin = proplists:get_value(?CLASSORIGIN, Attrs),
+                        propagated = proplists:get_value(?PROPAGATED, Attrs),
+                        qualifiers = 
+                        lists:map(fun(X) -> to_term(X) end, Qualifiers)};
 
 to_term({'PARAMETER.REFERENCE', Attrs, Children}) ->
     Qualifiers = lists:filter(
                    fun({Tag, _, _}) -> Tag == 'QUALIFIER' end, 
                    Children),
-    #parameter_reference{
-                               name = proplists:get_value(?NAME, Attrs),
-                               referenceclass = proplists:get_value(?REFERENCECLASS, Attrs),
-                               qualifiers = lists:map(fun(X) -> to_term(X) end, Qualifiers)};
+    #parameter_reference{name = proplists:get_value(?NAME, Attrs),
+                         referenceclass = 
+                         proplists:get_value(?REFERENCECLASS, Attrs),
+                         qualifiers = 
+                         lists:map(fun(X) -> to_term(X) end, Qualifiers)};
 
 to_term({'PARAMETER.ARRAY', Attrs, Children}) ->
     Qualifiers = lists:filter(
                    fun({Tag, _, _}) -> Tag == 'QUALIFIER' end, 
                    Children),
-    #parameter_array{
-                               name = proplists:get_value(?NAME, Attrs),
-                               type = proplists:get_value(?TYPE, Attrs),
-                               arraysize = proplists:get_value(?ARRAYSIZE, Attrs),
-                               qualifiers = lists:map(fun(X) -> to_term(X) end, Qualifiers)};
+    #parameter_array{name = proplists:get_value(?NAME, Attrs),
+                     type = proplists:get_value(?TYPE, Attrs),
+                     arraysize = proplists:get_value(?ARRAYSIZE, Attrs),
+                     qualifiers = 
+                     lists:map(fun(X) -> to_term(X) end, Qualifiers)};
 
 to_term({'PARAMETER', Attrs, Children}) ->
     Qualifiers = lists:filter(
                    fun({Tag, _, _}) -> Tag == 'QUALIFIER' end, 
                    Children),
-    #parameter_array{
-                               name = proplists:get_value(?NAME, Attrs),
-                               type = proplists:get_value(?TYPE, Attrs),
-                               qualifiers = lists:map(fun(X) -> to_term(X) end, Qualifiers)};  
+    #parameter_array{name = proplists:get_value(?NAME, Attrs),
+                     type = proplists:get_value(?TYPE, Attrs),
+                     qualifiers = 
+                     lists:map(fun(X) -> to_term(X) end, Qualifiers)};  
 
 to_term({'PARAMETER.REFARRAY', Attrs, Children}) ->
     Qualifiers = lists:filter(
                    fun({Tag, _, _}) -> Tag == 'QUALIFIER' end, 
                    Children),
-    #parameter_refarray{
-                               name = proplists:get_value(?NAME, Attrs),
-                               referenceclass = proplists:get_value(?REFERENCECLASS, Attrs),
-                               arraysize = proplists:get_value(?ARRAYSIZE, Attrs),
-                               qualifiers = lists:map(fun(X) -> to_term(X) end, Qualifiers)};  
+    #parameter_refarray{name = proplists:get_value(?NAME, Attrs),
+                        referenceclass = 
+                        proplists:get_value(?REFERENCECLASS, Attrs),
+                        arraysize = proplists:get_value(?ARRAYSIZE, Attrs),
+                        qualifiers = 
+                        lists:map(fun(X) -> to_term(X) end, Qualifiers)};  
 
 to_term({'METHOD', Attrs, Children}) ->
     Qualifiers = lists:filter(
@@ -325,18 +328,18 @@ cimxml_request_good(ResponseTT) ->
 
 cimxml_request(Doc) ->
     case (catch cimxml_parse:doc(Doc)) of
-        {'EXIT', Reason} ->
+        {'EXIT', _Reason} ->
             %% TODO: return error reason in HTTP header
             cimxml_request_not_well_formed();
-        {error, {ErrorType, Description}} ->
+        {error, {_ErrorType, _Description}} ->
             %% TODO: return error reason in HTTP header
             cimxml_request_not_valid();
         RequestTT ->
             case (catch exec(RequestTT)) of
-                {'EXIT', Reason} ->
+                {'EXIT', _Reason} ->
                     %% TODO: return error reason in HTTP header
                     cimxml_request_not_valid();
-                {error, Description} ->
+                {error, _Description} ->
                     %% TODO: return error reason in HTTP header
                     cimxml_request_not_valid();
                 ResponseTT -> 
