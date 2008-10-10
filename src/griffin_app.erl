@@ -12,4 +12,4 @@ start(_Type, _StartArgs) ->
     end.
 
 stop(_State) ->
-    exit(whereis(eb_sup), shutdown).
+    ok.
