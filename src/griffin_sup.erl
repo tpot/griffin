@@ -16,8 +16,12 @@ init([]) ->
                   {repository, start_link, [[{file, 'repository.dets'}]]},
                   permanent, 2000, worker, [repository]},
 
+    CIMOMHandle = {cimomhandle,
+                   {cimomhandle, start_link, []},
+                   permanent, 2000, worker, [cimomhandle]},
+
     CIMXMLServer = {cimxml_server, 
                     {cimxml_server, start_link, []},
                     permanent, 2000, worker, [cimxml_server]},
 
-    {ok, {{one_for_one, 5, 10}, [Repository, CIMXMLServer]}}.
+    {ok, {{one_for_one, 5, 10}, [Repository, CIMOMHandle, CIMXMLServer]}}.
