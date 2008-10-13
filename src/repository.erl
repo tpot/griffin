@@ -20,8 +20,9 @@
 %% Client interface
 
 get_subclasses(NameSpace, ClassName, DeepInheritance) ->
-    gen_server:call(
-      repository, {getSubclasses, NameSpace, ClassName, DeepInheritance}).
+    {ok, ClassList} = gen_server:call(
+      repository, {getSubclasses, NameSpace, ClassName, DeepInheritance}),
+    ClassList.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
