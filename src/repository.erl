@@ -1,10 +1,10 @@
 -module(repository).
 -behaviour(gen_server).
 
--export([start_link/1]).
+-export([start_link/1, get_subclasses/3]).
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, 
-	 terminate/2, code_change/3]).
+         terminate/2, code_change/3]).
 
 -include_lib("cim.hrl").
 
@@ -14,6 +14,16 @@
 	 }).
 
 -define(SERVER, ?MODULE).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Client interface
+
+get_subclasses(NameSpace, ClassName, DeepInheritance) ->
+    gen_server:call(
+      repository, {getSubclasses, NameSpace, ClassName, DeepInheritance}).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 start_link(Args) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, Args, []).
@@ -82,7 +92,7 @@ close(State) ->
 
 %% Return immediate subclasses of a class
 
-get_subclasses(State, NameSpace, ClassName) ->
+internal_get_subclasses(State, NameSpace, ClassName) ->
     lists:map(fun([X]) -> X end,
               match(State, 
                     {{class, NameSpace, '_'}, 
@@ -91,10 +101,10 @@ get_subclasses(State, NameSpace, ClassName) ->
 %% Return all subclasses of a class.  Recursively calling get_subclasses/3 
 %% is surprisingly very slow.
 
-get_subclasses_deep(_AllClasses, []) ->
+internal_get_subclasses_deep(_AllClasses, []) ->
     [];
 
-get_subclasses_deep(AllClasses, [ClassName | ClassList]) ->
+internal_get_subclasses_deep(AllClasses, [ClassName | ClassList]) ->
     SubClasses = lists:map(fun([Class, _]) -> 
                                    Class 
                            end,
@@ -103,14 +113,14 @@ get_subclasses_deep(AllClasses, [ClassName | ClassList]) ->
                                         end,
                                         AllClasses)),
     SubClasses ++ 
-        get_subclasses_deep(AllClasses, SubClasses) ++
-        get_subclasses_deep(AllClasses, ClassList).
+        internal_get_subclasses_deep(AllClasses, SubClasses) ++
+        internal_get_subclasses_deep(AllClasses, ClassList).
 
-get_subclasses_deep(State, NameSpace, ClassName) ->
+internal_get_subclasses_deep(State, NameSpace, ClassName) ->
     AllClasses = match(State,
                        {{class, NameSpace, '_'},
                         {'_', '$1', '$2', '_', '_', '_'}}),
-    get_subclasses_deep(AllClasses, [ClassName]).
+    internal_get_subclasses_deep(AllClasses, [ClassName]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -231,9 +241,9 @@ handle_call({enumerateClassNames, NameSpace, ClassName, DeepInheritance},
                           [NameSpace, ClassName]),
     Result = case DeepInheritance of
                  false ->
-                     get_subclasses(State, NameSpace, ClassName);
+                     internal_get_subclasses(State, NameSpace, ClassName);
                  true ->
-                     get_subclasses_deep(State, NameSpace, ClassName)
+                     internal_get_subclasses_deep(State, NameSpace, ClassName)
              end,
     {reply, {ok, Result}, State};
 
@@ -314,8 +324,10 @@ handle_call({getSubclasses, NameSpace, ClassName, DeepInheritance},
             _From, State) ->
     error_logger:info_msg("getSubclasses ~s:~s~n", [NameSpace, ClassName]),
     Result = case DeepInheritance of
-                 false -> get_subclasses(State, NameSpace, ClassName);
-                 true -> get_subclasses_deep(State, NameSpace, ClassName)
+                 false -> 
+                     internal_get_subclasses(State, NameSpace, ClassName);
+                 true -> 
+                     internal_get_subclasses_deep(State, NameSpace, ClassName)
              end,
     {reply, {ok, Result}, State};
 
