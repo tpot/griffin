@@ -491,7 +491,12 @@ imethod("EnumerateClasses", NameSpace, Params) ->
     end;
 
 imethod("EnumerateClassNames", NameSpace, Params) ->
-    ClassName = proplists:get_value("ClassName", Params, undefined),
+    ClassName = case proplists:get_value("ClassName", Params, undefined) of
+                    undefined ->
+                        undefined;
+                    Result ->
+                        Result#instancename.classname
+                end,
     DeepInheritance = get_bool_value("DeepInheritance", Params, false),
     case proplists:split(Params, ["ClassName", "DeepInheritance"]) of
         {_, []} ->
