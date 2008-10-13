@@ -270,6 +270,15 @@ to_term({Tag, _Attrs, _Children}) ->
 
 %% Convert an erlang term to a tupletree
 
+from_term({ok, List}) when is_list(List) ->
+    {'IRETURNVALUE', [], [from_term(Elt) || Elt <- List]};
+
+from_term({ok, Elt}) ->
+    {'IRETURNVALUE', [], [from_term(Elt)]};
+
+from_term(ok) ->
+    {'IRETURNVALUE', [], []};
+
 from_term({error, {Code}}) ->
     {'ERROR', [{'CODE', Code}, {'DESCRIPTION', cim_error_string(Code)}], []};
 
