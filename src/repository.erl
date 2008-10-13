@@ -91,37 +91,50 @@ close(State) ->
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% Return immediate subclasses of a class
-
-internal_get_subclasses(State, NameSpace, ClassName) ->
-    lists:map(fun([X]) -> X end,
-              match(State, 
-                    {{class, NameSpace, '_'}, 
-                     {'_', '$1', ClassName, '_', '_', '_'}})).
-
-%% Return all subclasses of a class.  Recursively calling get_subclasses/3 
-%% is surprisingly very slow.
-
 internal_get_subclasses_deep(_AllClasses, []) ->
     [];
 
-internal_get_subclasses_deep(AllClasses, [ClassName | ClassList]) ->
-    SubClasses = lists:map(fun([Class, _]) -> 
-                                   Class 
-                           end,
-                           lists:filter(fun([_, SuperClass]) ->
-                                                ClassName == SuperClass 
-                                        end,
-                                        AllClasses)),
-    SubClasses ++ 
+internal_get_subclasses_deep(AllClasses, [H | T]) ->
+    SubClasses = 
+        lists:map(
+          fun([C, _]) -> C end,
+          lists:filter(fun([_, SuperClass]) -> H == SuperClass end, 
+                       AllClasses)),
+    SubClasses ++
         internal_get_subclasses_deep(AllClasses, SubClasses) ++
-        internal_get_subclasses_deep(AllClasses, ClassList).
+        internal_get_subclasses_deep(AllClasses, T).
 
-internal_get_subclasses_deep(State, NameSpace, ClassName) ->
-    AllClasses = match(State,
-                       {{class, NameSpace, '_'},
-                        {'_', '$1', '$2', '_', '_', '_'}}),
-    internal_get_subclasses_deep(AllClasses, [ClassName]).
+internal_get_subclasses(Table, NameSpace, ClassName, DeepInheritance) ->
+    AllClasses = match(Table, {{class, NameSpace, '_'},
+                               {'_', '$1', '$2', '_', '_', '_'}}),
+    case ClassName of
+        undefined ->
+            case DeepInheritance of
+                true ->
+                    %% All classes
+                    lists:map(fun([C, _]) -> C end, AllClasses);
+                false ->
+                    %% All top level classes
+                    lists:map(fun([C, _]) -> C end,
+                              lists:filter(
+                                fun([_, SuperClass]) -> 
+                                        SuperClass == undefined 
+                                end, AllClasses))
+            end;
+        _ -> 
+            case DeepInheritance of
+                true ->
+                    %% All subclasses of ClassName
+                    internal_get_subclasses_deep(AllClasses, [ClassName]);
+                false ->
+                    %% Immediate subclasses of ClassName
+                    lists:map(fun([C, _]) -> C end,
+                              lists:filter(
+                                fun([_, SuperClass]) ->
+                                        SuperClass == ClassName
+                                end, AllClasses))
+            end
+    end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -240,13 +253,11 @@ handle_call({enumerateClassNames, NameSpace, ClassName, DeepInheritance},
             _From, State) ->
     error_logger:info_msg("enumerateClassNames ~s:~s~n", 
                           [NameSpace, ClassName]),
-    Result = case DeepInheritance of
-                 false ->
-                     internal_get_subclasses(State, NameSpace, ClassName);
-                 true ->
-                     internal_get_subclasses_deep(State, NameSpace, ClassName)
-             end,
-    {reply, {ok, Result}, State};
+    Result = 
+        internal_get_subclasses(State, NameSpace, ClassName, DeepInheritance),
+    {reply, 
+     {ok, lists:map(fun(C) -> #classname{name = C} end, Result)},
+     State};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -324,14 +335,10 @@ handle_call({deleteQualifier, NameSpace, Name}, _From, State) ->
 handle_call({getSubclasses, NameSpace, ClassName, DeepInheritance}, 
             _From, State) ->
     error_logger:info_msg("getSubclasses ~s:~s~n", [NameSpace, ClassName]),
-    Result = case DeepInheritance of
-                 false -> 
-                     internal_get_subclasses(State, NameSpace, ClassName);
-                 true -> 
-                     internal_get_subclasses_deep(State, NameSpace, ClassName)
-             end,
+    Result = 
+        internal_get_subclasses(State, NameSpace, ClassName, DeepInheritance),
     {reply, {ok, Result}, State};
-
+     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Any other call is not supported
