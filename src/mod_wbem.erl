@@ -302,13 +302,13 @@ imethod("EnumerateInstanceNames", NameSpace, Params) ->
     end;
 
 imethod("EnumerateInstances", NameSpace, Params) ->
-    LocalOnly = proplists:get_value(Params, "LocalOnly", "true"),
-    DeepInheritance = proplists:get_value(Params, "DeepInheritance", "false"),
+    LocalOnly = proplists:get_value("LocalOnly", Params, "true"),
+    DeepInheritance = proplists:get_value("DeepInheritance", Params, "false"),
     IncludeQualifiers = 
-        proplists:get_value(Params, "IncludeQualifiers", "true"),
+        proplists:get_value("IncludeQualifiers", Params, "true"),
     IncludeClassOrigin = 
-        proplists:get_value(Params, "IncludeClassOrigin", "false"),
-    PropertyList = proplists:get_value(Params, "PropertyList", []),
+        proplists:get_value("IncludeClassOrigin", Params, "false"),
+    PropertyList = proplists:get_value("PropertyList", Params, []),
     case proplists:split(Params, ["ClassName", "LocalOnly", "DeepInheritance",
                                   "IncludeQualifiers", "IncludeClassOrigin", 
                                   "PropertyList"]) of
@@ -323,12 +323,12 @@ imethod("EnumerateInstances", NameSpace, Params) ->
     end;
 
 imethod("GetInstance", NameSpace, Params) ->
-    LocalOnly = proplists:get_value(Params, "LocalOnly", "true"),
+    LocalOnly = proplists:get_value("LocalOnly", Params, "true"),
     IncludeQualifiers = 
-        proplists:get_value(Params, "IncludeQualifiers", "false"),
+        proplists:get_value("IncludeQualifiers", Params, "false"),
     IncludeClassOrigin = 
-        proplists:get_value(Params, "IncludeClassOrigin", "false"),
-    PropertyList = proplists:get_value(Params, "PropertyList", []),
+        proplists:get_value("IncludeClassOrigin", Params, "false"),
+    PropertyList = proplists:get_value("PropertyList", Params, []),
     case proplists:split(Params, ["InstanceName", "LocalOnly", 
                                   "IncludeQualifiers", "IncludeClassOrigin", 
                                   "PropertyList"]) of
@@ -363,8 +363,8 @@ imethod("DeleteInstance", NameSpace, Params) ->
 
 imethod("ModifyInstance", NameSpace, Params) ->
     IncludeQualifiers = 
-        proplists:get_value(Params, "IncludeQualifiers", "false"),
-    PropertyList = proplists:get_value(Params, "PropertyList", []),
+        proplists:get_value("IncludeQualifiers", Params, "false"),
+    PropertyList = proplists:get_value("PropertyList", Params, []),
     case proplists:split(Params, ["ModifiedInstance", "IncludeQualifiers",
                                   "PropertyList"]) of
         {[[{_, ModifiedInstance}], _, _], []} ->
@@ -415,12 +415,12 @@ imethod("DeleteQualifier", NameSpace, Params) ->
     end;
 
 imethod("GetClass", NameSpace, Params) ->
-    LocalOnly = proplists:get_value(Params, "LocalOnly", "true"),
+    LocalOnly = proplists:get_value("LocalOnly", Params, "true"),
     IncludeQualifiers = 
-        proplists:get_value(Params, "IncludeQualifiers", "true"),
+        proplists:get_value("IncludeQualifiers", Params, "true"),
     IncludeClassOrigin = 
-        proplists:get_value(Params, "IncludeClassOrigin", "false"),
-    PropertyList = proplists:get_value(Params, "PropertyList", []),
+        proplists:get_value("IncludeClassOrigin", Params, "false"),
+    PropertyList = proplists:get_value("PropertyList", Params, []),
     case proplists:split(Params, ["ClassName", "LocalOnly", 
                                   "IncludeQualifiers", "IncludeClassOrigin", 
                                   "PropertyList"]) of
@@ -464,13 +464,13 @@ imethod("ModifyClass", NameSpace, Params) ->
     end;
 
 imethod("EnumerateClasses", NameSpace, Params) ->
-    ClassName = proplists:get_value(Params, "ClassName", undefined),
-    DeepInheritance = proplists:get_value(Params, "DeepInheritance", "false"),
-    LocalOnly = proplists:get_value(Params, "LocalOnly", "true"),
+    ClassName = proplists:get_value("ClassName", Params, undefined),
+    DeepInheritance = proplists:get_value("DeepInheritance", Params, "false"),
+    LocalOnly = proplists:get_value("LocalOnly", Params, "true"),
     IncludeQualifiers = 
-        proplists:get_value(Params, "IncludeQualifiers", "true"),
+        proplists:get_value("IncludeQualifiers", Params, "true"),
     IncludeClassOrigin = 
-        proplists:get_value(Params, "IncludeClassOrigin", "false"),
+        proplists:get_value("IncludeClassOrigin", Params, "false"),
     case proplists:split(Params, ["ClassName", "DeepInheritance",
                                   "LocalOnly", "IncludeQualifiers",
                                   "IncludeClassOrigin"]) of
@@ -484,8 +484,8 @@ imethod("EnumerateClasses", NameSpace, Params) ->
     end;
 
 imethod("EnumerateClassNames", NameSpace, Params) ->
-    ClassName = proplists:get_value(Params, "ClassName", undefined),
-    DeepInheritance = proplists:get_value(Params, "DeepInheritance", "false"),
+    ClassName = proplists:get_value("ClassName", Params, undefined),
+    DeepInheritance = proplists:get_value("DeepInheritance", Params, "false"),
     case proplists:split(Params, ["ClassName", "DeepInheritance"]) of
         {_, []} ->
             gen_server:call(
