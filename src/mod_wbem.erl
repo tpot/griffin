@@ -21,6 +21,24 @@ string_join([H | T], Sep, Acc) ->
 string_join([], _Sep, Acc) ->
     Acc.
 
+%% Fetch a boolean value from a property list
+
+get_bool_value(Key, List) ->
+    case proplists:get_value(Key, List) of
+        undefined ->
+            undefined;
+        Result ->
+            list_to_atom(string:to_lower(Result))
+    end.
+
+get_bool_value(Key, List, Default) ->
+    case get_bool_value(Key, List) of
+        undefined ->
+            Default;
+        Result ->
+            Result
+    end.
+
 %% Convert a CIM error code to a string
 
 cim_error_string(Code) ->
@@ -302,12 +320,10 @@ imethod("EnumerateInstanceNames", NameSpace, Params) ->
     end;
 
 imethod("EnumerateInstances", NameSpace, Params) ->
-    LocalOnly = proplists:get_value("LocalOnly", Params, "true"),
-    DeepInheritance = proplists:get_value("DeepInheritance", Params, "false"),
-    IncludeQualifiers = 
-        proplists:get_value("IncludeQualifiers", Params, "true"),
-    IncludeClassOrigin = 
-        proplists:get_value("IncludeClassOrigin", Params, "false"),
+    LocalOnly = get_bool_value("LocalOnly", Params, true),
+    DeepInheritance = get_bool_value("DeepInheritance", Params, false),
+    IncludeQualifiers = get_bool_value("IncludeQualifiers", Params, true),
+    IncludeClassOrigin = get_bool_value("IncludeClassOrigin", Params, false),
     PropertyList = proplists:get_value("PropertyList", Params, []),
     case proplists:split(Params, ["ClassName", "LocalOnly", "DeepInheritance",
                                   "IncludeQualifiers", "IncludeClassOrigin", 
@@ -316,18 +332,16 @@ imethod("EnumerateInstances", NameSpace, Params) ->
             gen_server:call(
               cimomhandle,
               {enumerateInstances, NameSpace, ClassName, LocalOnly, 
-               DeepInheritance, IncludeQualifiers, IncludeClassOrigin, 
+               DeepInheritance, IncludeQualifiers, IncludeClassOrigin,
                PropertyList});
         _ ->
             {error, {?CIM_ERR_INVALID_PARAMETER}}
     end;
 
 imethod("GetInstance", NameSpace, Params) ->
-    LocalOnly = proplists:get_value("LocalOnly", Params, "true"),
-    IncludeQualifiers = 
-        proplists:get_value("IncludeQualifiers", Params, "false"),
-    IncludeClassOrigin = 
-        proplists:get_value("IncludeClassOrigin", Params, "false"),
+    LocalOnly = get_bool_value("LocalOnly", Params, true),
+    IncludeQualifiers = get_bool_value("IncludeQualifiers", Params, false),
+    IncludeClassOrigin = get_bool_value("IncludeClassOrigin", Params, false),
     PropertyList = proplists:get_value("PropertyList", Params, []),
     case proplists:split(Params, ["InstanceName", "LocalOnly", 
                                   "IncludeQualifiers", "IncludeClassOrigin", 
@@ -362,8 +376,7 @@ imethod("DeleteInstance", NameSpace, Params) ->
     end;
 
 imethod("ModifyInstance", NameSpace, Params) ->
-    IncludeQualifiers = 
-        proplists:get_value("IncludeQualifiers", Params, "false"),
+    IncludeQualifiers = get_bool_value("IncludeQualifiers", Params, false),
     PropertyList = proplists:get_value("PropertyList", Params, []),
     case proplists:split(Params, ["ModifiedInstance", "IncludeQualifiers",
                                   "PropertyList"]) of
@@ -415,11 +428,9 @@ imethod("DeleteQualifier", NameSpace, Params) ->
     end;
 
 imethod("GetClass", NameSpace, Params) ->
-    LocalOnly = proplists:get_value("LocalOnly", Params, "true"),
-    IncludeQualifiers = 
-        proplists:get_value("IncludeQualifiers", Params, "true"),
-    IncludeClassOrigin = 
-        proplists:get_value("IncludeClassOrigin", Params, "false"),
+    LocalOnly = get_bool_value("LocalOnly", Params, true),
+    IncludeQualifiers = get_bool_value("IncludeQualifiers", Params, true),
+    IncludeClassOrigin = get_bool_value("IncludeClassOrigin", Params, false),
     PropertyList = proplists:get_value("PropertyList", Params, []),
     case proplists:split(Params, ["ClassName", "LocalOnly", 
                                   "IncludeQualifiers", "IncludeClassOrigin", 
@@ -427,10 +438,8 @@ imethod("GetClass", NameSpace, Params) ->
         {[[{_, ClassName}], _, _, _, _], []} ->
             gen_server:call(
               cimomhandle, 
-              {getClass, NameSpace, 
-               ClassName#instancename.classname, LocalOnly, 
-               IncludeQualifiers, IncludeClassOrigin, 
-               PropertyList});
+              {getClass, NameSpace, ClassName#instancename.classname, 
+               LocalOnly, IncludeQualifiers, IncludeClassOrigin, PropertyList});
         _ ->
             {error, {?CIM_ERR_INVALID_PARAMETER}}
     end;
@@ -465,12 +474,10 @@ imethod("ModifyClass", NameSpace, Params) ->
 
 imethod("EnumerateClasses", NameSpace, Params) ->
     ClassName = proplists:get_value("ClassName", Params, undefined),
-    DeepInheritance = proplists:get_value("DeepInheritance", Params, "false"),
-    LocalOnly = proplists:get_value("LocalOnly", Params, "true"),
-    IncludeQualifiers = 
-        proplists:get_value("IncludeQualifiers", Params, "true"),
-    IncludeClassOrigin = 
-        proplists:get_value("IncludeClassOrigin", Params, "false"),
+    DeepInheritance = get_bool_value("DeepInheritance", Params, false),
+    LocalOnly = get_bool_value("LocalOnly", Params, true),
+    IncludeQualifiers = get_bool_value("IncludeQualifiers", Params, true),
+    IncludeClassOrigin = get_bool_value("IncludeClassOrigin", Params, false),
     case proplists:split(Params, ["ClassName", "DeepInheritance",
                                   "LocalOnly", "IncludeQualifiers",
                                   "IncludeClassOrigin"]) of
@@ -485,7 +492,7 @@ imethod("EnumerateClasses", NameSpace, Params) ->
 
 imethod("EnumerateClassNames", NameSpace, Params) ->
     ClassName = proplists:get_value("ClassName", Params, undefined),
-    DeepInheritance = proplists:get_value("DeepInheritance", Params, "false"),
+    DeepInheritance = get_bool_value("DeepInheritance", Params, false),
     case proplists:split(Params, ["ClassName", "DeepInheritance"]) of
         {_, []} ->
             gen_server:call(
