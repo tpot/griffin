@@ -3,7 +3,7 @@
 
 -include_lib("cim.hrl").
 
--export([start_link/0]).
+-export([start_link/0, register_provider/3, unregister_provider/2]).
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, 
          terminate/2, code_change/3]).
@@ -20,12 +20,23 @@ start_link() ->
 init([]) ->
     {ok, #state{}}.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Client interface
+
+register_provider(NameSpace, ClassName, Module) ->
+    gen_server:call(
+      cimomhandle, {registerProvider, NameSpace, ClassName, Module}).
+
+unregister_provider(NameSpace, ClassName) ->
+    gen_server:call(
+      cimomhandle, {unregister_provider, NameSpace, ClassName}).
+
 %% Look up provider module for namespace:classname
 
 get_module(ProvidersForClass, NameSpace, ClassName) ->
-    proplists:get_value(
-      {string:to_lower(NameSpace), string:to_lower(ClassName)}, 
-      ProvidersForClass).
+    Key = {string:to_lower(NameSpace), string:to_lower(ClassName)},
+    proplists:get_value(Key, ProvidersForClass).
 
 handle_call(stop, _From, State) ->
     {stop, normal, stopped, State};
