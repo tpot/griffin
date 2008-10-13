@@ -50,14 +50,12 @@ handle_call({registerProvider, NameSpace, ClassName, Module}, _From, State) ->
     Value = {{string:to_lower(NameSpace), string:to_lower(ClassName)}, Module},
     NewProvidersForClass = 
         [Value] ++ proplists:delete(Value, ProvidersForClass),
-    io:format("NPFC = ~p~n", [NewProvidersForClass]),
     {reply, ok, State#state{providersforclass = NewProvidersForClass}};
 
 handle_call({unregisterProvider, NameSpace, ClassName}, _From, State) ->
     ProvidersForClass = State#state.providersforclass,
     Key = {string:to_lower(NameSpace), string:to_lower(ClassName)},
     NewProvidersForClass = proplists:delete(Key, ProvidersForClass),
-    io:format("NPFC = ~p~n", [NewProvidersForClass]),
     {reply, ok, State#state{providersforclass = NewProvidersForClass}};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
