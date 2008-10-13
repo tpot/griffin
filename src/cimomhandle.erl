@@ -18,7 +18,6 @@ start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).    
 
 init([]) ->
-    error_logger:info_msg("cimomhandle:init()~n"),
     {ok, #state{}}.
 
 %% Look up provider module for namespace:classname
@@ -49,9 +48,6 @@ handle_call({unregisterProvider, NameSpace, ClassName}, _From, State) ->
     NewProvidersForClass = proplists:delete(Key, ProvidersForClass),
     io:format("NPFC = ~p~n", [NewProvidersForClass]),
     {reply, ok, State#state{providersforclass = NewProvidersForClass}};
-
-handle_call(crash, _From, _State) ->
-    exit(crash);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
