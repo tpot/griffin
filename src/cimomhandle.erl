@@ -9,8 +9,7 @@
          terminate/2, code_change/3]).
 
 -record(state, {
-          providersforclass = [],
-          repository
+          providersforclass = []
          }).
 
 -define(SERVER, ?MODULE).
@@ -19,9 +18,8 @@ start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).    
 
 init([]) ->
-    State = #state{repository = whereis(repository)},
-    unregister(repository),
-    {ok, State}.
+    error_logger:info_msg("cimomhandle:init()~n"),
+    {ok, #state{}}.
 
 %% Look up provider module for namespace:classname
 
@@ -52,15 +50,17 @@ handle_call({unregisterProvider, NameSpace, ClassName}, _From, State) ->
     io:format("NPFC = ~p~n", [NewProvidersForClass]),
     {reply, ok, State#state{providersforclass = NewProvidersForClass}};
 
+handle_call(crash, _From, _State) ->
+    exit(crash);
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Basic Read
 
 handle_call({getClass, NameSpace, ClassName, LocalOnly, IncludeQualifiers,
              IncludeClassOrigin, PropertyList}, _From, State) ->
-    #state{repository = Repository} = State,
     Result = gen_server:call(
-               Repository,
+               repository,
                {getClass, NameSpace, ClassName, LocalOnly, IncludeQualifiers,
                 IncludeClassOrigin, PropertyList}),
     {reply, Result, State};
@@ -68,18 +68,16 @@ handle_call({getClass, NameSpace, ClassName, LocalOnly, IncludeQualifiers,
 handle_call({enumerateClasses, NameSpace, ClassName, DeepInheritance,
              LocalOnly, IncludeQualifiers, IncludeClassOrigin}, 
             _From, State) ->
-    #state{repository = Repository} = State,
     Result = gen_server:call(
-               Repository,
+               repository,
                {enumerateClasses, NameSpace, ClassName, DeepInheritance,
                 LocalOnly, IncludeQualifiers, IncludeClassOrigin}),
     {reply, Result, State};
 
 handle_call({enumerateClassNames, NameSpace, ClassName, DeepInheritance},
             _From, State) ->
-    #state{repository = Repository} = State,
     Result = gen_server:call(
-               Repository,
+               repository,
                {enumerateClassNames, NameSpace, ClassName, DeepInheritance}),
     {reply, Result, State};
 
@@ -163,20 +161,17 @@ handle_call({setProperty, _NameSpace, _InstanceName, _PropertyName, _NewValue},
 %% Schema Manipulation
 
 handle_call({createClass, NameSpace, NewClass}, _From, State) ->
-    #state{repository = Repository} = State,
-    Result = gen_server:call(Repository, {createClass, NameSpace, NewClass}),
+    Result = gen_server:call(repository, {createClass, NameSpace, NewClass}),
     {reply, Result, State};
 
 handle_call({modifyClass, NameSpace, ModifiedClass}, _From, State) ->
-    #state{repository = Repository} = State,
     Result = gen_server:call( 
-               Repository, {modifyClass, NameSpace, ModifiedClass}),
+               repository, {modifyClass, NameSpace, ModifiedClass}),
     {reply, Result, State};
 
 handle_call({deleteClass, NameSpace, ClassName}, _From, State) ->
-    #state{repository = Repository} = State,
     Result = gen_server:call(
-               Repository, {deleteClass, NameSpace, ClassName}),
+               repository, {deleteClass, NameSpace, ClassName}),
     {reply, Result, State};
 
 %% Instance Manipulation
@@ -250,24 +245,20 @@ handle_call({execQuery, _QueryLanguage, _Query}, _From, State) ->
 %% Qualifier Declaration
 
 handle_call({getQualifier, NameSpace, Name}, _From, State) ->
-    #state{repository = Repository} = State,
-    Result = gen_server:call(Repository, {getQualifier, NameSpace, Name}),
+    Result = gen_server:call(repository, {getQualifier, NameSpace, Name}),
     {reply, Result, State};
 
 handle_call({setQualifier, NameSpace, QualifierDeclaration}, _From, State) ->
-    #state{repository = Repository} = State,
     Result = gen_server:call(
-               Repository, {setQualifier, NameSpace, QualifierDeclaration}),
+               repository, {setQualifier, NameSpace, QualifierDeclaration}),
     {reply, Result, State};
 
 handle_call({deleteQualifier, NameSpace, Name}, _From, State) ->
-    #state{repository = Repository} = State,
-    Result = gen_server:call(Repository, {deleteQualifier, NameSpace, Name}),
+    Result = gen_server:call(repository, {deleteQualifier, NameSpace, Name}),
     {reply, Result, State};
 
 handle_call({enumerateQualifiers, NameSpace}, _From, State) ->
-    #state{repository = Repository} = State,
-    Result = gen_server:call(Repository, {enumerateQualifiers, NameSpace}),
+    Result = gen_server:call(repository, {enumerateQualifiers, NameSpace}),
     {reply, Result, State};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
