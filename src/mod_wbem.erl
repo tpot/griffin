@@ -288,6 +288,9 @@ to_term({Tag, _Attrs, _Children}) ->
 
 %% Convert an erlang term to a tupletree
 
+from_term(Term) when is_record(Term, classname) ->
+    {'CLASSNAME', [{?NAME, Term#classname.name}], []};
+
 from_term({ok, List}) when is_list(List) ->
     {'IRETURNVALUE', [], [from_term(Elt) || Elt <- List]};
 
