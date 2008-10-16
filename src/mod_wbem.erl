@@ -613,7 +613,7 @@ imethod("ModifyClass", NameSpace, Params) ->
     case proplists:split(Params, ["ModifiedClass"]) of
         {[[{_, ModifiedClass}]], []} ->
             gen_server:call(
-              cimomhandle, {createClass, NameSpace, ModifiedClass});
+              cimomhandle, {modifyClass, NameSpace, ModifiedClass});
         _ -> 
             {error, {?CIM_ERR_INVALID_PARAMETER}}
     end;
