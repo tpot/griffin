@@ -5,7 +5,7 @@ import unittest
 
 cli = WBEMConnection('http://localhost')
 
-class EnumerateClassNamesTest(unittest.TestCase):
+class EnumerateClassNames(unittest.TestCase):
 
     def setUp(self):
 
@@ -72,6 +72,66 @@ class GetClass(unittest.TestCase):
         [self.assertEqual(cl, cli.GetClass(cl.classname)) 
          for cl in self.allclasses]
 
+class CreateClass(unittest.TestCase):
+
+    name = 'Griffin_TestCreateClass'
+
+    def test(self):
+
+        cl = CIMClass(
+            self.name, 
+            properties = {'InstanceID':
+                              CIMProperty('InstanceID', None, 'string')})
+
+        cli.CreateClass(cl)
+
+        self.assertEqual(cli.GetClass(self.name), cl)
+
+    def tearDown(self):
+        cli.DeleteClass(self.name)
+
+class DeleteClass(unittest.TestCase):
+
+    name = 'Griffin_TestDeleteClass'
+
+    def setUp(self):
+
+        cl = CIMClass(
+            self.name, 
+            properties = {'InstanceID':
+                              CIMProperty('InstanceID', None, 'string')})
+
+        cli.CreateClass(cl)
+
+    def test(self):
+        cli.DeleteClass(self.name)
+        self.assertRaises(CIMError, cli.GetClass, self.name)
+
+class ModifyClass(unittest.TestCase):
+
+    name = 'Griffin_TestModifyClass'
+
+    def setUp(self):
+
+        self.cl = CIMClass(
+            self.name, 
+            properties = {'InstanceID':
+                              CIMProperty('InstanceID', None, 'string')})
+
+        cli.CreateClass(self.cl)
+        
+    def test(self):
+
+        newcl = self.cl.copy()
+        newcl.properties['Foo'] = CIMProperty('Foo', None, 'boolean')
+
+        cli.ModifyClass(newcl)
+
+        self.assertEqual(cli.GetClass(self.name), newcl)
+
+    def tearDown(self):
+        cli.DeleteClass(self.name)
+
 class EnumerateQualifiers(unittest.TestCase):
     
     def test(self):
@@ -93,13 +153,16 @@ class DeleteQualifier(unittest.TestCase):
 
     def test(self):
         cli.DeleteQualifier(self.name)
+        self.assertRaises(CIMError, cli.GetQualifier, self.name)
 
 class SetQualifier(unittest.TestCase):
 
     name = 'Griffin_TestSetQualifier'
 
     def test(self):
-        cli.SetQualifier(CIMQualifierDeclaration(self.name, 'boolean'))
+        qd = CIMQualifierDeclaration(self.name, 'boolean')
+        cli.SetQualifier(qd)
+        self.assertEqual(cli.GetQualifier(self.name), qd)
 
     def tearDown(self):
         cli.DeleteQualifier(self.name)
