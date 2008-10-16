@@ -72,5 +72,21 @@ class GetClass(unittest.TestCase):
         [self.assertEqual(cl, cli.GetClass(cl.classname)) 
          for cl in self.allclasses]
 
+class EnumerateQualifiers(unittest.TestCase):
+    
+    def setUp(self):
+        self.quals = cli.EnumerateQualifiers()
+
+    def testSizes(self):
+        self.assert_(len(self.quals) > 0)
+
+class GetQualifier(unittest.TestCase):
+
+    def setUp(self):
+        self.quals = cli.EnumerateQualifiers()
+
+    def testSizes(self):
+        [self.assertEqual(q, cli.GetQualifier(q.name)) for q in self.quals]
+        
 if __name__ == '__main__':
     unittest.main()

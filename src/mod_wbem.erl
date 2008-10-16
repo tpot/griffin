@@ -400,6 +400,40 @@ from_term(Term) when is_record(Term, class) ->
          E <- Term#class.qualifiers ++ Term#class.properties ++ 
              Term#class.methods]};
 
+from_term(Term) when is_record(Term, qualifier_declaration) ->
+    Attrs = [{?NAME, Term#qualifier_declaration.name},
+             {?TYPE, Term#qualifier_declaration.type},
+             {?ISARRAY, Term#qualifier_declaration.isarray}] ++
+        case Term#qualifier_declaration.arraysize of
+            undefined -> [];
+            _ -> [{?ARRAYSIZE, Term#qualifier_declaration.arraysize}]
+        end ++
+        case Term#qualifier_declaration.overridable of
+            "true" -> [];
+            "false" -> [{?OVERRIDABLE, Term#qualifier_declaration.overridable}]
+        end ++
+        case Term#qualifier_declaration.tosubclass of
+            "true" -> [];
+            "false" -> [{?TOSUBCLASS, Term#qualifier_declaration.tosubclass}]
+        end ++
+        case Term#qualifier_declaration.toinstance of
+            "false" -> [];
+            "true" -> [{?TOINSTANCE, Term#qualifier_declaration.toinstance}]
+        end ++
+        case Term#qualifier_declaration.translatable of
+            "false" -> [];
+            "true" -> [{?TRANSLATABLE, Term#qualifier_declaration.translatable}]
+        end,
+    Scope = {'SCOPE', 
+             lists:map(fun(MetaElement) -> 
+                               {MetaElement, "true"} end, 
+                       Term#qualifier_declaration.scope), []},
+    Value = case Term#qualifier_declaration.value of
+                   undefined -> [];
+                   _ -> [{'VALUE', [], [Term#qualifier_declaration.value]}]
+               end,
+    {'QUALIFIER.DECLARATION', Attrs, [Scope] ++ Value};
+
 from_term({ok, List}) when is_list(List) ->
     {'IRETURNVALUE', [], [from_term(Elt) || Elt <- List]};
 
