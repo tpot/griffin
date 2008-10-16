@@ -68,25 +68,41 @@ class GetClass(unittest.TestCase):
     def setUp(self):
         self.allclasses = set(cli.EnumerateClasses(DeepInheritance = True))
 
-    def testGetClass(self):
+    def test(self):
         [self.assertEqual(cl, cli.GetClass(cl.classname)) 
          for cl in self.allclasses]
 
 class EnumerateQualifiers(unittest.TestCase):
     
-    def setUp(self):
-        self.quals = cli.EnumerateQualifiers()
-
-    def testSizes(self):
-        self.assert_(len(self.quals) > 0)
+    def test(self):
+        quals = cli.EnumerateQualifiers()
+        self.assert_(len(quals) > 0)
 
 class GetQualifier(unittest.TestCase):
 
-    def setUp(self):
-        self.quals = cli.EnumerateQualifiers()
+    def test(self):
+        quals = cli.EnumerateQualifiers()
+        [self.assertEqual(q, cli.GetQualifier(q.name)) for q in quals]
 
-    def testSizes(self):
-        [self.assertEqual(q, cli.GetQualifier(q.name)) for q in self.quals]
-        
+class DeleteQualifier(unittest.TestCase):
+
+    name = 'Griffin_TestDeleteQualifier'
+
+    def setUp(self):
+        cli.SetQualifier(CIMQualifierDeclaration(self.name, 'boolean'))
+
+    def test(self):
+        cli.DeleteQualifier(self.name)
+
+class SetQualifier(unittest.TestCase):
+
+    name = 'Griffin_TestSetQualifier'
+
+    def test(self):
+        cli.SetQualifier(CIMQualifierDeclaration(self.name, 'boolean'))
+
+    def tearDown(self):
+        cli.DeleteQualifier(self.name)
+
 if __name__ == '__main__':
     unittest.main()
