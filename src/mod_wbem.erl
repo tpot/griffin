@@ -291,6 +291,115 @@ to_term({Tag, _Attrs, _Children}) ->
 from_term(Term) when is_record(Term, classname) ->
     {'CLASSNAME', [{?NAME, Term#classname.name}], []};
 
+from_term(Term) when is_record(Term, qualifier) ->
+    Attrs = [{?NAME, Term#qualifier.name},
+             {?TYPE, Term#qualifier.type}] ++
+        case Term#qualifier.propagated of
+            undefined -> [];
+            _ -> [{?PROPAGATED, Term#qualifier.propagated}]
+        end,
+    %% TODO: flavours
+    %% TODO: (VALUE | VALUE.ARRAY)? 
+    {'QUALIFIER', Attrs, []};
+
+from_term(Term) when is_record(Term, property) ->
+    Attrs = [{?NAME, Term#property.name},
+             {?TYPE, Term#property.type}] ++
+        case Term#property.classorigin of
+            undefined -> [];
+            _ -> [{?CLASSORIGIN, Term#property.classorigin}]
+        end ++
+        case Term#property.propagated of
+            undefined -> [];
+            _ -> [{?PROPAGATED, Term#property.propagated}]
+        end,
+    Child = case Term#property.value of
+                undefined -> [];
+                _ -> to_term(Term#property.value)
+            end,
+    {'PROPERTY', Attrs, Child};
+
+from_term(Term) when is_record(Term, property_reference) ->
+    Attrs = [{?NAME, Term#property_reference.name}] ++
+        case Term#property_reference.referenceclass of
+            undefined -> [];
+            _ -> [{?REFERENCECLASS, Term#property_reference.referenceclass}]
+        end ++
+        case Term#property_reference.classorigin of
+            undefined -> [];
+            _ -> [{?CLASSORIGIN, Term#property_reference.classorigin}]
+        end ++
+        case Term#property_reference.propagated of
+            undefined -> [];
+            _ -> [{?PROPAGATED, Term#property_reference.propagated}]
+        end,
+    Children = [from_term(E) || E <- Term#property_reference.qualifiers] ++
+        case Term#property_reference.value of
+            undefined -> [];
+            Value -> [from_term(Value)]
+        end,
+    {'PROPERTY.REFERENCE', Attrs, Children};
+
+from_term(Term) when is_record(Term, method) ->
+    Attrs = [{?NAME, Term#method.name}] ++
+        case Term#method.type of
+            undefined -> [];
+            _ -> [{?TYPE, Term#method.type}]
+        end ++
+        case Term#method.classorigin of
+            undefined -> [];
+            _ -> [{?CLASSORIGIN, Term#method.classorigin}]
+        end ++
+        case Term#method.propagated of
+            undefined -> [];
+            _ -> [{?PROPAGATED, Term#method.propagated}]
+        end,
+    {'METHOD', Attrs, 
+     [from_term(E) || E <- Term#method.qualifiers ++ Term#method.parameters]};
+
+from_term(Term) when is_record(Term, parameter_reference) ->
+    Attrs = [{?NAME, Term#parameter_reference.name}] ++
+        case Term#parameter_reference.referenceclass of
+            undefined -> [];
+            _ -> [{?REFERENCECLASS, Term#parameter_reference.referenceclass}]
+        end,
+    {'PARAMETER.REFERENCE', Attrs, []};
+
+from_term(Term) when is_record(Term, parameter_array) ->
+    Attrs = [{?NAME, Term#parameter_array.name},
+             {?TYPE, Term#parameter_array.type}] ++
+        case Term#parameter_array.arraysize of
+            undefined -> [];
+            _ -> [{?ARRAYSIZE, Term#parameter_array.arraysize}]
+        end,
+    {'PARAMETER.ARRAY', Attrs, 
+     [from_term(E) || E <- Term#parameter_array.qualifiers]};    
+
+from_term(Term) when is_record(Term, parameter_refarray) ->
+    Attrs = [{?NAME, Term#parameter_refarray.name}] ++
+        case Term#parameter_refarray.referenceclass of
+            undefined -> [];
+            _ -> [{?REFERENCECLASS, Term#parameter_refarray.referenceclass}]
+        end,
+        case Term#parameter_refarray.arraysize of
+            undefined -> [];
+            _ -> [{?ARRAYSIZE, Term#parameter_refarray.arraysize}]
+        end,
+    {'PARAMETER.REFARRAY', Attrs, 
+     [from_term(E) || E <- Term#parameter_refarray.qualifiers]};    
+
+from_term(Term) when is_record(Term, class) ->
+    Attrs = [{?NAME, Term#class.name}] ++
+        case Term#class.superclass of
+            undefined -> [];
+            _ -> [{?SUPERCLASS, Term#class.superclass}]
+        end,
+    {'CLASS', 
+     Attrs, 
+     [from_term(E) || 
+         E <- Term#class.qualifiers ++ Term#class.properties ++ 
+             Term#class.methods]};
+
 from_term({ok, List}) when is_list(List) ->
     {'IRETURNVALUE', [], [from_term(Elt) || Elt <- List]};
 
@@ -476,7 +585,12 @@ imethod("ModifyClass", NameSpace, Params) ->
     end;
 
 imethod("EnumerateClasses", NameSpace, Params) ->
-    ClassName = proplists:get_value("ClassName", Params, undefined),
+    ClassName = case proplists:get_value("ClassName", Params, undefined) of
+                    undefined ->
+                        undefined;
+                    Result ->
+                        Result#instancename.classname
+                end,
     DeepInheritance = get_bool_value("DeepInheritance", Params, false),
     LocalOnly = get_bool_value("LocalOnly", Params, true),
     IncludeQualifiers = get_bool_value("IncludeQualifiers", Params, true),

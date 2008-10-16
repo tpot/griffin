@@ -230,22 +230,18 @@ handle_call({modifyClass, NameSpace, ModifiedClass}, _From, State) ->
 
 %% EnumerateClasses
 
-handle_call({enumerateClasses, NameSpace, ClassName, _DeepInheritance,
+handle_call({enumerateClasses, NameSpace, ClassName, DeepInheritance,
              _LocalOnly, _IncludeQualifiers, _IncludeClassOrigin}, 
             _From, State) ->
-    error_logger:info_msg("enumerateClasses ~s:~s~n", 
-                          [NameSpace, ClassName]),
-    Result = foldl(
-               State,
-               fun(Object, Acc) ->
-                       case Object of
-                           {{class, NameSpace, _}, Class} -> 
-                               [Class] ++ Acc;
-                           _ ->
-                               Acc
-                       end
-               end, []),
-    {reply, {ok, Result}, State};
+    error_logger:info_msg("enumerateClasses ~s:~s Deep=~s~n", 
+                          [NameSpace, ClassName, DeepInheritance]),
+    ClassNames = 
+        internal_get_subclasses(State, NameSpace, ClassName, DeepInheritance),
+    Classes = [case lookup(State, {class, NameSpace, string:to_lower(CN)}) of
+                   [{_, Class}] ->
+                       Class
+               end || CN <- ClassNames],
+    {reply, {ok, Classes}, State};
 
 %% EnumerateClassNames
 
@@ -253,10 +249,10 @@ handle_call({enumerateClassNames, NameSpace, ClassName, DeepInheritance},
             _From, State) ->
     error_logger:info_msg("enumerateClassNames ~s:~s~n", 
                           [NameSpace, ClassName]),
-    Result = 
+    ClassNames = 
         internal_get_subclasses(State, NameSpace, ClassName, DeepInheritance),
     {reply, 
-     {ok, lists:map(fun(C) -> #classname{name = C} end, Result)},
+     {ok, lists:map(fun(C) -> #classname{name = C} end, ClassNames)},
      State};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
