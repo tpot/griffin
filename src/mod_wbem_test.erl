@@ -22,8 +22,8 @@ badly_formed_cimxml_request() ->
 invalid_cimxml_request() ->
     {Status, Headers, _Body} = mod_wbem:do([], "<CIM/>"),
     ?assertEqual(Status, 400),
-    ?assertEqual(
-       proplists:get_value("CIMError", Headers), "request-not-valid").
+    ?assertEqual(proplists:get_value("CIMError", Headers), "request-not-valid"),
+    ?_assert(proplists:get_value("GriffinError", Headers) /= undefined).
 
 %% Test suite
 

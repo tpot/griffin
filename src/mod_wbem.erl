@@ -697,29 +697,30 @@ exec(TT) ->
 cimxml_request_not_well_formed() ->
     {400, [{"CIMError", "request-not-well-formed"}], ""}.
 
-cimxml_request_not_valid() ->
-    {400, [{"CIMError", "request-not-valid"}], ""}.
+cimxml_request_not_valid(Description) ->
+    {400, 
+     [{"CIMError", "request-not-valid"}, {"GriffinError", Description}], ""}.
 
 cimxml_request_good(ResponseTT) ->
     {200, [], lists:flatten(xmerl:export_simple([ResponseTT], xmerl_xml))}.
 
 cimxml_request(Doc) ->
     case (catch cimxml_parse:doc(Doc)) of
-        {'EXIT', _Reason} ->
-            %% TODO: return error reason in HTTP header
-            cimxml_request_not_well_formed();
-        {error, {_ErrorType, _Description}} ->
-            %% TODO: return error reason in HTTP header
-            cimxml_request_not_valid();
+        {error, {ErrorType, Description}} ->
+            %% XML did not conform to DTD
+            cimxml_request_not_valid(
+              io_lib:format("~s: ~s", [atom_to_list(ErrorType), Description]));
+        {'EXIT', Reason} ->
+            %% CIM-XML validator crashed - oops
+            cimxml_request_not_valid(io_lib:format("~w", [Reason]));
         RequestTT ->
             case (catch exec(RequestTT)) of
-                %% TODO: Should return CIM_ERR_FAILED and detailed status
-                {'EXIT', _Reason} ->
-                    cimxml_request_not_valid();
-                {error, _Description} ->
-                    cimxml_request_not_valid();
+                %% Exception
+                {'EXIT', Reason} ->
+                    cimxml_request_not_valid(io_lib:format("~s", [Reason]));
+                %% Normal result
                 ResponseTT -> 
-                    cimxml_request_good(ResponseTT) 
+                    cimxml_request_good(ResponseTT)
             end
     end.
 
@@ -728,10 +729,12 @@ cimxml_request(Doc) ->
 
 do(_Headers, Body) ->
     case (catch xmerl_scan:string(Body, [{quiet, true}])) of
+        %% TODO: pass error description back in HTTP headers
         {'EXIT', {fatal, _XmlError}} ->
             cimxml_request_not_well_formed();
         {'EXIT', _XmlError} ->
             cimxml_request_not_well_formed();
+        %% Well-formed XML document
         {Doc, _Trailer} ->
             cimxml_request(Doc)
     end.
