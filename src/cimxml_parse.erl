@@ -43,7 +43,7 @@
 
 %% Used by cimxml_parse_test module
 
--export([get_attr/2, get_attr/3, elts_to_tuple/1]).
+-export([elts_to_tuple/1]).
 
 -include_lib("xmerl/include/xmerl.hrl").
 -include_lib("cimxml.hrl").
@@ -90,33 +90,10 @@ parse(Elt) ->
     Params = [Elt] ++ [elts_to_tuple(Elt#xmlElement.content)],
     apply(?MODULE, Elt#xmlElement.name, Params).
 
-%% Fetch optional attribute
-%%
-%% @spec get_attr(atom(), xmlAttribute(), string()) -> string()
-
-get_attr(Name, Elt, DefaultValue) ->
-    PropList = [proplists:property(Attr#xmlAttribute.name, Attr) ||
-                   Attr <- Elt#xmlElement.attributes],
-    proplists:get_value(Name, PropList, #xmlAttribute{value = DefaultValue}).
-
-%% Fetch required attribute
-%%
-%% @spec get_attr(atom(), xmlAttribute()) ->
-%%           string() | throw({error, {missing_attribute_error, string()}})
-
-get_attr(Name, Elt) ->
-    case get_attr(Name, Elt, undefined) of
-        #xmlAttribute{value = undefined} -> 
-            throw({error, {missing_attribute_error, 
-                           io_lib:format("Missing ~p attribute", [Name])}});
-        Any -> 
-            Any
-    end.
-
 %% Fetch and validate a VALUETYPE attribute
 
 get_valuetype_attr(Elt) ->
-    Attr = get_attr(?VALUETYPE, Elt, #xmlAttribute{value = "string"}),
+    Attr = xml:get_attr(?VALUETYPE, Elt, #xmlAttribute{value = "string"}),
     case Attr#xmlAttribute.value of
         "string" -> Attr;
         "boolean" -> Attr;
@@ -131,7 +108,7 @@ get_valuetype_attr(Elt) ->
 %% Fetch and validate a TYPE attribute 
 
 get_type_attr(Elt) ->
-    Attr = get_attr(?TYPE, Elt, #xmlAttribute{value = undefined}),
+    Attr = xml:get_attr(?TYPE, Elt, #xmlAttribute{value = undefined}),
     case Attr#xmlAttribute.value of
         "boolean" -> Attr;
         "string" -> Attr;
@@ -157,7 +134,7 @@ get_type_attr(Elt) ->
 %% Fetch an optional TYPE attribute
 
 get_type_attr(Elt, Default) ->
-    case get_attr(?TYPE, Elt, undefined) of
+    case xml:get_attr(?TYPE, Elt, undefined) of
         undefined -> Default;
         _ -> get_type_attr(Elt)
     end.
@@ -165,7 +142,7 @@ get_type_attr(Elt, Default) ->
 %% Fetch and validate an optional boolean attribute
 
 get_bool_attr(Name, Elt, Default) ->
-    Attr = get_attr(Name, Elt, Default),
+    Attr = xml:get_attr(Name, Elt, Default),
     case Attr#xmlAttribute.value of
         "true" -> Attr;
         "false" -> Attr;
@@ -199,8 +176,8 @@ get_bool_attr(Name, Elt) ->
 %% 	DTDVERSION CDATA #REQUIRED>
 
 'CIM'(Elt, [{'MESSAGE', [Message]}]) ->
-    CimVersion = get_attr(?CIMVERSION, Elt),
-    DtdVersion = get_attr(?DTDVERSION, Elt),
+    CimVersion = xml:get_attr(?CIMVERSION, Elt),
+    DtdVersion = xml:get_attr(?DTDVERSION, Elt),
     {'CIM',
      [{?CIMVERSION, CimVersion#xmlAttribute.value},
       {?DTDVERSION, DtdVersion#xmlAttribute.value}],
@@ -233,10 +210,10 @@ get_bool_attr(Name, Elt) ->
 %%          %QualifierFlavor;>
 
 'QUALIFIER.DECLARATION'(Elt, Children) ->
-    Name = get_attr(?NAME, Elt),
+    Name = xml:get_attr(?NAME, Elt),
     Type = get_type_attr(Elt),
     IsArray = get_bool_attr(?ISARRAY, Elt),
-    ArraySize = get_attr(?ARRAYSIZE, Elt, undefined),
+    ArraySize = xml:get_attr(?ARRAYSIZE, Elt, undefined),
     Overridable = get_bool_attr(?OVERRIDABLE, Elt, "true"),
     ToSubclass = get_bool_attr(?TOSUBCLASS, Elt, "true"),
     ToInstance = get_bool_attr(?TOINSTANCE, Elt, "false"),
@@ -444,7 +421,7 @@ get_bool_attr(Name, Elt) ->
 %% 	%CIMName;>
 
 'NAMESPACE'(Elt, []) ->
-    Name = get_attr(?NAME, Elt),
+    Name = xml:get_attr(?NAME, Elt),
     {'NAMESPACE', [{?NAME, Name#xmlAttribute.value}], []};
 
 'NAMESPACE'(_Elt, _) ->
@@ -473,7 +450,7 @@ get_bool_attr(Name, Elt) ->
 %%	%CIMName;>
 
 'CLASSNAME'(Elt, []) ->
-    Name = get_attr(?NAME, Elt),
+    Name = xml:get_attr(?NAME, Elt),
     {'CLASSNAME', [{?NAME, Name#xmlAttribute.value}], []};
 
 'CLASSNAME'(_Elt, _) ->
@@ -503,24 +480,24 @@ get_bool_attr(Name, Elt) ->
 %%	%ClassName;>
 
 'INSTANCENAME'(Elt, []) ->
-    ClassName = get_attr(?CLASSNAME, Elt),
+    ClassName = xml:get_attr(?CLASSNAME, Elt),
     {'INSTANCENAME', 
      [{?CLASSNAME, ClassName#xmlAttribute.value}], 
      []};
 
 'INSTANCENAME'(Elt, [{'KEYBINDING', Keybindings}]) ->
-    ClassName = get_attr(?CLASSNAME, Elt),
+    ClassName = xml:get_attr(?CLASSNAME, Elt),
     {'INSTANCENAME', 
      [{?CLASSNAME, ClassName#xmlAttribute.value}],
      [parse(Keybinding) || Keybinding <- Keybindings]};
 
 'INSTANCENAME'(Elt, [{'KEYVALUE', [KeyValue]}]) ->
-    ClassName = get_attr(?CLASSNAME, Elt),
+    ClassName = xml:get_attr(?CLASSNAME, Elt),
     {'INSTANCENAME', [{?CLASSNAME, ClassName#xmlAttribute.value}],
      [parse(KeyValue)]};
 
 'INSTANCENAME'(Elt, [{'VALUE.REFERENCE', [ValueReference]}]) ->
-    ClassName = get_attr(?CLASSNAME, Elt),
+    ClassName = xml:get_attr(?CLASSNAME, Elt),
     {'INSTANCENAME', [{?CLASSNAME, ClassName#xmlAttribute.value}],
      [parse(ValueReference)]};
 
@@ -545,7 +522,7 @@ get_bool_attr(Name, Elt) ->
 
 'KEYBINDING'(Elt, [{ChildTag, [Child]}]) 
   when ChildTag == 'KEYVALUE' orelse ChildTag == 'VALUE.REFERENCE' ->
-    Name = get_attr(?NAME, Elt),
+    Name = xml:get_attr(?NAME, Elt),
     {'KEYBINDING', [{?NAME, Name#xmlAttribute.value}], [parse(Child)]};
 
 'KEYBINDING'(_Elt, _) ->
@@ -586,8 +563,8 @@ get_bool_attr(Name, Elt) ->
 %%	%SuperClass;>
 
 'CLASS'(Elt, Children) ->
-    Name = get_attr(?NAME, Elt),
-    SuperClass = get_attr(?SUPERCLASS, Elt, undefined),
+    Name = xml:get_attr(?NAME, Elt),
+    SuperClass = xml:get_attr(?SUPERCLASS, Elt, undefined),
     {_Qualifiers, Rest} =
         lists:splitwith(
           fun({Tag, _}) -> Tag == 'QUALIFIER' end, Children),
@@ -619,7 +596,7 @@ get_bool_attr(Name, Elt) ->
 %%        xml:lang   NMTOKEN      #IMPLIED>
 
 'INSTANCE'(Elt, Children) ->
-    ClassName = get_attr(?CLASSNAME, Elt),
+    ClassName = xml:get_attr(?CLASSNAME, Elt),
     {Qualifiers, Rest} = 
         lists:splitwith(
           fun({Tag, _}) -> Tag == 'QUALIFIER' end, Children),
@@ -647,7 +624,7 @@ get_bool_attr(Name, Elt) ->
 %%         xml:lang   NMTOKEN     #IMPLIED>
 
 'QUALIFIER'(Elt, []) ->
-    Name = get_attr(?NAME, Elt),    
+    Name = xml:get_attr(?NAME, Elt),    
     Type = get_type_attr(Elt),
     Propagated = get_bool_attr(?PROPAGATED, Elt),
     {'QUALIFIER', 
@@ -657,7 +634,7 @@ get_bool_attr(Name, Elt) ->
      []};
 
 'QUALIFIER'(Elt, [{'VALUE', [Value]}]) ->
-    Name = get_attr(?NAME, Elt),    
+    Name = xml:get_attr(?NAME, Elt),    
     Type = get_type_attr(Elt),
     Propagated = get_bool_attr(?PROPAGATED, Elt),
     {'QUALIFIER', 
@@ -667,7 +644,7 @@ get_bool_attr(Name, Elt) ->
      [parse(Value)]};
 
 'QUALIFIER'(Elt, [{'VALUE.ARRAY', [ValueArray]}]) ->
-    Name = get_attr(?NAME, Elt),    
+    Name = xml:get_attr(?NAME, Elt),    
     Type = get_type_attr(Elt),
     Propagated = get_bool_attr(?PROPAGATED, Elt),
     {'QUALIFIER', 
@@ -688,8 +665,8 @@ get_bool_attr(Name, Elt) ->
 %%         xml:lang   NMTOKEN     #IMPLIED>
 
 'PROPERTY'(Elt, Children) ->
-    Name = get_attr(?NAME, Elt),    
-    ClassOrigin = get_attr(?CLASSORIGIN, Elt, undefined),
+    Name = xml:get_attr(?NAME, Elt),    
+    ClassOrigin = xml:get_attr(?CLASSORIGIN, Elt, undefined),
     Propagated = get_bool_attr(?PROPAGATED, Elt),
     Type = get_type_attr(Elt),
     {_Qualifiers, Value} = 
@@ -718,10 +695,10 @@ get_bool_attr(Name, Elt) ->
 %%         xml:lang   NMTOKEN     #IMPLIED>
 
 'PROPERTY.ARRAY'(Elt, Children) ->
-    Name = get_attr(?NAME, Elt),    
+    Name = xml:get_attr(?NAME, Elt),    
     Type = get_type_attr(Elt),
-    ArraySize = get_attr(?ARRAYSIZE, Elt, undefined),
-    ClassOrigin = get_attr(?CLASSORIGIN, Elt, undefined),
+    ArraySize = xml:get_attr(?ARRAYSIZE, Elt, undefined),
+    ClassOrigin = xml:get_attr(?CLASSORIGIN, Elt, undefined),
     Propagated = get_bool_attr(?PROPAGATED, Elt),
     {_Qualifiers, ValueArray} = 
         lists:splitwith(
@@ -749,10 +726,10 @@ get_bool_attr(Name, Elt) ->
 %%	%Propagated;>
 
 'PROPERTY.REFERENCE'(Elt, Children) ->
-    Name = get_attr(?NAME, Elt),
-    ReferenceClass = get_attr(?REFERENCECLASS, Elt, undefined),
-    ClassOrigin = get_attr(?CLASSORIGIN, Elt, undefined),
-    Propagated = get_attr(?PROPAGATED, Elt, undefined),
+    Name = xml:get_attr(?NAME, Elt),
+    ReferenceClass = xml:get_attr(?REFERENCECLASS, Elt, undefined),
+    ClassOrigin = xml:get_attr(?CLASSORIGIN, Elt, undefined),
+    Propagated = xml:get_attr(?PROPAGATED, Elt, undefined),
     {_Qualifiers, ValueReference} =
         lists:splitwith(
           fun({Tag, _}) -> Tag == 'QUALIFIER' end, Children),
@@ -779,10 +756,10 @@ get_bool_attr(Name, Elt) ->
 %%         %Propagated;>
 
 'METHOD'(Elt, Children) ->
-    Name = get_attr(?NAME, Elt),
+    Name = xml:get_attr(?NAME, Elt),
     Type = get_type_attr(Elt, undefined),
-    ClassOrigin = get_attr(?CLASSORIGIN, Elt, undefined),
-    Propagated = get_attr(?PROPAGATED, Elt, undefined),
+    ClassOrigin = xml:get_attr(?CLASSORIGIN, Elt, undefined),
+    Propagated = xml:get_attr(?PROPAGATED, Elt, undefined),
     {_Qualifiers, Rest} = 
         lists:splitwith(
           fun({Tag, _}) -> Tag == 'QUALIFIER' end, Children),
@@ -815,7 +792,7 @@ get_bool_attr(Name, Elt) ->
 %%          %CIMType;              #REQUIRED>
 
 'PARAMETER'(Elt, []) ->
-    Name = get_attr(?NAME, Elt),
+    Name = xml:get_attr(?NAME, Elt),
     Type = get_type_attr(Elt),
     {'PARAMETER', 
      [{?NAME, Name#xmlAttribute.value}, 
@@ -823,7 +800,7 @@ get_bool_attr(Name, Elt) ->
      []};
 
 'PARAMETER'(Elt, [{'QUALIFIER', Qualifiers}]) ->
-    Name = get_attr(?NAME, Elt),
+    Name = xml:get_attr(?NAME, Elt),
     Type = get_type_attr(Elt),
     {'PARAMETER', 
      [{?NAME, Name#xmlAttribute.value}, {?TYPE, Type#xmlAttribute.value}],
@@ -838,16 +815,16 @@ get_bool_attr(Name, Elt) ->
 %% 	%ReferenceClass;>
 
 'PARAMETER.REFERENCE'(Elt, []) ->
-    Name = get_attr(?NAME, Elt),
-    ReferenceClass = get_attr(?REFERENCECLASS, Elt, undefined),
+    Name = xml:get_attr(?NAME, Elt),
+    ReferenceClass = xml:get_attr(?REFERENCECLASS, Elt, undefined),
     {'PARAMETER.REFERENCE', 
      [{?NAME, Name#xmlAttribute.value}, 
       {?REFERENCECLASS, ReferenceClass#xmlAttribute.value}], 
      []};
 
 'PARAMETER.REFERENCE'(Elt, [{'QUALIFIER', Qualifiers}]) ->
-    Name = get_attr(?NAME, Elt),
-    ReferenceClass = get_attr(?REFERENCECLASS, Elt, undefined),
+    Name = xml:get_attr(?NAME, Elt),
+    ReferenceClass = xml:get_attr(?REFERENCECLASS, Elt, undefined),
     {'PARAMETER.REFERENCE', 
      [{?NAME, Name#xmlAttribute.value},
       {?REFERENCECLASS, ReferenceClass#xmlAttribute.value}], 
@@ -863,9 +840,9 @@ get_bool_attr(Name, Elt) ->
 %%          %ArraySize;>
 
 'PARAMETER.ARRAY'(Elt, []) ->
-    Name = get_attr(?NAME, Elt),
+    Name = xml:get_attr(?NAME, Elt),
     Type = get_type_attr(Elt, undefined),
-    ArraySize = get_attr(?ARRAYSIZE, Elt, undefined),
+    ArraySize = xml:get_attr(?ARRAYSIZE, Elt, undefined),
     {'PARAMETER.ARRAY', 
      [{?NAME, Name#xmlAttribute.value},
       {?TYPE, Type#xmlAttribute.value}, 
@@ -873,9 +850,9 @@ get_bool_attr(Name, Elt) ->
      []};
 
 'PARAMETER.ARRAY'(Elt, [{'QUALIFIER', Qualifiers}]) ->
-    Name = get_attr(?NAME, Elt),
+    Name = xml:get_attr(?NAME, Elt),
     Type = get_type_attr(Elt, undefined),
-    ArraySize = get_attr(?ARRAYSIZE, Elt, undefined),
+    ArraySize = xml:get_attr(?ARRAYSIZE, Elt, undefined),
     {'PARAMETER.ARRAY', 
      [{?NAME, Name#xmlAttribute.value},
       {?TYPE, Type#xmlAttribute.value}, 
@@ -892,9 +869,9 @@ get_bool_attr(Name, Elt) ->
 %% 	%ArraySize;>
 
 'PARAMETER.REFARRAY'(Elt, []) ->
-    Name = get_attr(?NAME, Elt),
-    ReferenceClass = get_attr(?REFERENCECLASS, Elt, undefined),
-    ArraySize = get_attr(?ARRAYSIZE, Elt, undefined),
+    Name = xml:get_attr(?NAME, Elt),
+    ReferenceClass = xml:get_attr(?REFERENCECLASS, Elt, undefined),
+    ArraySize = xml:get_attr(?ARRAYSIZE, Elt, undefined),
     {'PARAMETER.REFARRAY', 
      [{?NAME, Name#xmlAttribute.value},
       {?REFERENCECLASS, ReferenceClass#xmlAttribute.value}, 
@@ -902,9 +879,9 @@ get_bool_attr(Name, Elt) ->
      []};
 
 'PARAMETER.REFARRAY'(Elt, [{'QUALIFIER', Qualifiers}]) ->
-    Name = get_attr(?NAME, Elt),
-    ReferenceClass = get_attr(?REFERENCECLASS, Elt, undefined),
-    ArraySize = get_attr(?ARRAYSIZE, Elt, undefined),
+    Name = xml:get_attr(?NAME, Elt),
+    ReferenceClass = xml:get_attr(?REFERENCECLASS, Elt, undefined),
+    ArraySize = xml:get_attr(?ARRAYSIZE, Elt, undefined),
     {'PARAMETER.REFARRAY', 
      [{?NAME, Name#xmlAttribute.value},
       {?REFERENCECLASS, ReferenceClass#xmlAttribute.value}, 
@@ -955,8 +932,8 @@ get_bool_attr(Name, Elt) ->
 
 'MESSAGE'(Elt, [{ChildTag, [Child]}]) 
   when ChildTag == 'SIMPLEREQ' orelse ChildTag == 'MULTIREQ' ->
-    Id = get_attr(?ID, Elt),
-    ProtocolVersion = get_attr(?PROTOCOLVERSION, Elt),
+    Id = xml:get_attr(?ID, Elt),
+    ProtocolVersion = xml:get_attr(?PROTOCOLVERSION, Elt),
     {'MESSAGE', 
      [{?ID, Id#xmlAttribute.value},
       {?PROTOCOLVERSION, ProtocolVersion#xmlAttribute.value}],
@@ -990,7 +967,7 @@ get_bool_attr(Name, Elt) ->
 %% 	%CIMName;>
 
 'IMETHODCALL'(Elt, [{'LOCALNAMESPACEPATH', [LocalNSP]} | Children]) ->
-    Name = get_attr(?NAME, Elt),
+    Name = xml:get_attr(?NAME, Elt),
     {_Params, Rest} = 
         lists:splitwith(
           fun({Tag, _}) -> Tag == 'IPARAMVALUE' end, Children),
@@ -1022,12 +999,12 @@ get_bool_attr(Name, Elt) ->
 
 'METHODCALL'(Elt, [{PathTag, [Path]}]) 
   when PathTag == 'LOCALINSTANCEPATH' orelse PathTag == 'LOCALCLASSPATH' ->
-    Name = get_attr(?NAME, Elt),
+    Name = xml:get_attr(?NAME, Elt),
     {'METHODCALL', [{?NAME, Name#xmlAttribute.value}], [parse(Path)]};
 
 'METHODCALL'(Elt, [{PathTag, [Path]} | Children])
   when PathTag == 'LOCALINSTANCEPATH' orelse PathTag == 'LOCALCLASSPATH' ->   
-    Name = get_attr(?NAME, Elt),
+    Name = xml:get_attr(?NAME, Elt),
     {ParamValues, Rest} =
         lists:splitwith(
           fun({Tag, _}) -> Tag == 'PARAMVALUE' end, Children),
@@ -1060,8 +1037,8 @@ get_bool_attr(Name, Elt) ->
 %%       %ParamType;  #IMPLIED> 
 
 'PARAMVALUE'(Elt, []) ->
-    Name = get_attr(?NAME, Elt),
-    ParamType = get_attr(?PARAMTYPE, Elt, undefined),
+    Name = xml:get_attr(?NAME, Elt),
+    ParamType = xml:get_attr(?PARAMTYPE, Elt, undefined),
     {'PARAMVALUE', 
      [{?NAME, Name#xmlAttribute.value}, 
       {?PARAMTYPE, ParamType#xmlAttribute.value}], 
@@ -1070,8 +1047,8 @@ get_bool_attr(Name, Elt) ->
 'PARAMVALUE'(Elt, [{ValueTag, ValueElement}])
   when ValueTag == 'VALUE' orelse ValueTag == 'VALUE.REFERENCE' orelse
 ValueTag == 'VALUE.ARRAY' orelse ValueTag == 'VALUE.REFARRAY' ->
-    Name = get_attr(?NAME, Elt),
-    ParamType = get_attr(?PARAMTYPE, Elt, undefined),
+    Name = xml:get_attr(?NAME, Elt),
+    ParamType = xml:get_attr(?PARAMTYPE, Elt, undefined),
     {'PARAMVALUE', 
      [{?NAME, Name#xmlAttribute.value},
       {?PARAMTYPE, ParamType#xmlAttribute.value}],
@@ -1089,7 +1066,7 @@ ValueTag == 'VALUE.ARRAY' orelse ValueTag == 'VALUE.REFARRAY' ->
 %% 	%CIMName;>
 
 'IPARAMVALUE'(Elt, Children) ->
-    Name = get_attr(?NAME, Elt),
+    Name = xml:get_attr(?NAME, Elt),
     {_, Rest} =
         lists:splitwith(
           fun({Tag, _}) ->
