@@ -20,8 +20,8 @@ init([]) ->
                    {cimomhandle, start_link, []},
                    permanent, 2000, worker, [cimomhandle]},
 
-    CIMXMLServer = {cimxml_server, 
-                    {cimxml_server, start_link, []},
-                    permanent, 2000, worker, [cimxml_server]},
+    HTTPServer = {http_server, 
+                  {http_server, start_link, []},
+                  permanent, 2000, worker, [http_server]},
 
-    {ok, {{one_for_one, 5, 10}, [Repository, CIMOMHandle, CIMXMLServer]}}.
+    {ok, {{one_for_one, 5, 10}, [Repository, CIMOMHandle, HTTPServer]}}.

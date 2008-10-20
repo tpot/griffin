@@ -1,4 +1,4 @@
--module(cimxml_server).
+-module(http_server).
 -behaviour(gen_server).
 
 -export([start_link/0]).
