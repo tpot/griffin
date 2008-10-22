@@ -47,7 +47,8 @@ handle_call(stop, _From, State) ->
 
 handle_call({registerProvider, NameSpace, ClassName, Module}, _From, State) ->
     ProvidersForClass = State#state.providersforclass,
-    Value = {{string:to_lower(NameSpace), string:to_lower(ClassName)}, Module},
+    Pid = providermanager:start(Module, []),
+    Value = {{string:to_lower(NameSpace), string:to_lower(ClassName)}, Pid},
     NewProvidersForClass = 
         [Value] ++ proplists:delete(Value, ProvidersForClass),
     {reply, ok, State#state{providersforclass = NewProvidersForClass}};
