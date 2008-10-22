@@ -38,6 +38,17 @@ module_for_class(ProvidersForClass, NameSpace, ClassName) ->
     Key = {string:to_lower(NameSpace), string:to_lower(ClassName)},
     proplists:get_value(Key, ProvidersForClass).
 
+module_for_classes(_ProvidersForClass, _NameSpace, []) ->
+    [];
+
+module_for_classes(ProvidersForClass, NameSpace, [H|T]) ->
+    case module_for_class(ProvidersForClass, NameSpace, H) of
+        undefined ->
+            module_for_classes(ProvidersForClass, NameSpace, T);
+        Module ->
+            [{H, Module}] ++ module_for_classes(ProvidersForClass, NameSpace, T)
+    end.
+
 handle_call(stop, _From, State) ->
     {stop, normal, stopped, State};
 
@@ -121,17 +132,34 @@ handle_call({enumerateInstances, NameSpace, InstanceName, LocalOnly,
      end,
      State};
 
+
 handle_call({enumerateInstanceNames, NameSpace, ClassName}, _From, State) ->
+    %% Get list of provider modules for class and subclasses
     ProvidersForClass = State#state.providersforclass,
-    {reply,
-     case get_module(ProvidersForClass, NameSpace, ClassName) of
-         undefined ->
-             {ok, []};
-         ProviderModule ->
-             providermanager:call(
-               ProviderModule, {enumerateInstanceNames, NameSpace, ClassName})
-     end,
-     State};
+    ClassList = [ClassName] ++ 
+        repository:get_subclasses(NameSpace, ClassName, true),
+    ModuleList = module_for_classes(ProvidersForClass, NameSpace, ClassList),
+    %% Call each provider module but abort on first error
+    {_, Result} = 
+        lists:mapfoldr(
+          fun({CN, Module}, Acc) ->
+                  case Acc of
+                      {error, _} ->
+                          Acc;
+                      _ ->
+                          case providermanager:call(
+                                 Module, 
+                                 {enumerateInstanceNames, NameSpace, CN}) of
+                              {error, Reason} ->
+                                  {dummy, {error, Reason}};
+                              {ok, Data} ->
+                                  {dummy, [Data] ++ Acc}
+                          end
+                  end
+          end,
+          [],
+          ModuleList),
+    {reply, {ok, lists:flatten(Result)}, State};
 
 handle_call({getProperty, _NameSpace, _InstanceName, _PropertyName},
             _From, State) ->
