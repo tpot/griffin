@@ -34,7 +34,7 @@ unregister_provider(NameSpace, ClassName) ->
 
 %% Look up provider module for namespace:classname
 
-get_module(ProvidersForClass, NameSpace, ClassName) ->
+module_for_class(ProvidersForClass, NameSpace, ClassName) ->
     Key = {string:to_lower(NameSpace), string:to_lower(ClassName)},
     proplists:get_value(Key, ProvidersForClass).
 
@@ -92,7 +92,7 @@ handle_call({getInstance, NameSpace, InstanceName, LocalOnly, IncludeQualifiers,
     ProvidersForClass = State#state.providersforclass,
     ClassName = InstanceName#instancename.classname,
     {reply,
-     case get_module(ProvidersForClass, NameSpace, ClassName) of
+     case module_for_class(ProvidersForClass, NameSpace, ClassName) of
          undefined ->
              {error, {?CIM_ERR_NOT_FOUND}};
          ProviderModule ->
@@ -109,7 +109,7 @@ handle_call({enumerateInstances, NameSpace, InstanceName, LocalOnly,
     ProvidersForClass = State#state.providersforclass,
     ClassName = InstanceName#instancename.classname,
     {reply,
-     case get_module(ProvidersForClass, NameSpace, ClassName) of
+     case module_for_class(ProvidersForClass, NameSpace, ClassName) of
          undefined ->
              {ok, []};
          ProviderModule ->
@@ -186,7 +186,7 @@ handle_call({createInstance, NameSpace, NewInstance}, _From, State) ->
     ProvidersForClass = State#state.providersforclass,
     ClassName = NewInstance#instance.classname,
     {reply,
-     case get_module(ProvidersForClass, NameSpace, ClassName) of
+     case module_for_class(ProvidersForClass, NameSpace, ClassName) of
          undefined ->
              {error, {?CIM_ERR_NOT_SUPPORTED}};
          ProviderModule ->
@@ -200,7 +200,7 @@ handle_call({modifyInstance, NameSpace, ModifiedInstance, IncludeQualifiers,
     ProvidersForClass = State#state.providersforclass,
     ClassName = ModifiedInstance#instance.classname,
     {reply,
-     case get_module(ProvidersForClass, NameSpace, ClassName) of
+     case module_for_class(ProvidersForClass, NameSpace, ClassName) of
          undefined ->
              {error, {?CIM_ERR_NOT_SUPPORTED}};
          ProviderModule ->
@@ -214,7 +214,7 @@ handle_call({deleteInstance, NameSpace, InstanceName}, _From, State) ->
     ProvidersForClass = State#state.providersforclass,
     ClassName = InstanceName#instancename.classname,
     {reply, 
-     case get_module(ProvidersForClass, NameSpace, ClassName) of
+     case module_for_class(ProvidersForClass, NameSpace, ClassName) of
          undefined ->
              {error, {?CIM_ERR_NOT_SUPPORTED}};
          ProviderModule ->
