@@ -434,6 +434,20 @@ from_term(Term) when is_record(Term, qualifier_declaration) ->
                end,
     {'QUALIFIER.DECLARATION', Attrs, [Scope] ++ Value};
 
+from_term(Term) when is_record(Term, instancename) ->
+    {'INSTANCENAME', 
+     [{'CLASSNAME', Term#instancename.classname}],
+     [from_term(KB) || KB <- Term#instancename.keybindings]};
+
+from_term(Term) when is_record(Term, keybinding) ->
+    {'KEYBINDING', 
+     [{?NAME, Term#keybinding.name}], 
+     [from_term(Term#keybinding.value)]};
+
+from_term(Term) when is_record(Term, keyvalue) ->
+    Attrs = [{?VALUETYPE, Term#keyvalue.valuetype}],
+    {'KEYVALUE', Attrs, [Term#keyvalue.value]};
+
 from_term({ok, List}) when is_list(List) ->
     {'IRETURNVALUE', [], [from_term(Elt) || Elt <- List]};
 
