@@ -30,7 +30,7 @@ register_provider(NameSpace, ClassName, Module) ->
 
 unregister_provider(NameSpace, ClassName) ->
     gen_server:call(
-      cimomhandle, {unregister_provider, NameSpace, ClassName}).
+      cimomhandle, {unregisterProvider, NameSpace, ClassName}).
 
 %% Look up provider module for namespace:classname
 
