@@ -49,6 +49,41 @@ module_for_classes(ProvidersForClass, NameSpace, [H|T]) ->
             [{H, Module}] ++ module_for_classes(ProvidersForClass, NameSpace, T)
     end.
 
+%% Map a function across providers registered for any subclasses of
+%% ClassName in the given NameSpace.  Return a list of results, or
+%% an error tuple for the first error encountered.
+
+map_subclasses(Fun, ProvidersForClass, NameSpace, ClassName) ->
+    %% Get list of classes to fold over
+    ClassList = [ClassName] ++ 
+        repository:get_subclasses(NameSpace, ClassName, true),
+    %% Get registered providers for class list
+    ModuleList = module_for_classes(ProvidersForClass, NameSpace, ClassList),
+    %% Call fun on each provider but abort on first error
+    {_, Result} = 
+        lists:mapfoldr(
+          fun({CN, Module}, Acc) ->
+                  case Acc of
+                      {error, _} ->
+                          Acc;
+                      _ ->
+                          case Fun(NameSpace, CN, Module) of
+                              {error, Reason} ->
+                                  {dummy, {error, Reason}};
+                              {ok, Data} ->
+                                  {dummy, Data ++ Acc}
+                          end
+                  end
+          end, 
+          [],
+          ModuleList),
+    case Result of
+        {error, _} ->
+            Result;
+        _ ->
+            {ok, Result}
+    end.
+
 handle_call(stop, _From, State) ->
     {stop, normal, stopped, State};
 
@@ -132,34 +167,15 @@ handle_call({enumerateInstances, NameSpace, InstanceName, LocalOnly,
      end,
      State};
 
-
 handle_call({enumerateInstanceNames, NameSpace, ClassName}, _From, State) ->
-    %% Get list of provider modules for class and subclasses
     ProvidersForClass = State#state.providersforclass,
-    ClassList = [ClassName] ++ 
-        repository:get_subclasses(NameSpace, ClassName, true),
-    ModuleList = module_for_classes(ProvidersForClass, NameSpace, ClassList),
-    %% Call each provider module but abort on first error
-    {_, Result} = 
-        lists:mapfoldr(
-          fun({CN, Module}, Acc) ->
-                  case Acc of
-                      {error, _} ->
-                          Acc;
-                      _ ->
-                          case providermanager:call(
-                                 Module, 
-                                 {enumerateInstanceNames, NameSpace, CN}) of
-                              {error, Reason} ->
-                                  {dummy, {error, Reason}};
-                              {ok, Data} ->
-                                  {dummy, [Data] ++ Acc}
-                          end
-                  end
-          end,
-          [],
-          ModuleList),
-    {reply, {ok, lists:flatten(Result)}, State};
+    Result = map_subclasses(
+               fun(NS, CN, Module) ->
+                       providermanager:call(
+                         Module, {enumerateInstanceNames, NS, CN}) 
+               end,
+               ProvidersForClass, NameSpace, ClassName),
+    {reply, Result, State};
 
 handle_call({getProperty, _NameSpace, _InstanceName, _PropertyName},
             _From, State) ->
