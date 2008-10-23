@@ -153,19 +153,15 @@ handle_call({enumerateInstances, NameSpace, InstanceName, LocalOnly,
              DeepInheritance, IncludeQualifiers, IncludeClassOrigin, 
              PropertyList}, _From, State) ->
     ProvidersForClass = State#state.providersforclass,
-    ClassName = InstanceName#instancename.classname,
-    {reply,
-     case module_for_class(ProvidersForClass, NameSpace, ClassName) of
-         undefined ->
-             {ok, []};
-         ProviderModule ->
-             providermanager:call(
-               ProviderModule,
-               {enumerateInstances, NameSpace, ClassName, LocalOnly,
-                DeepInheritance, IncludeQualifiers, IncludeClassOrigin,
-                PropertyList})
-     end,
-     State};
+    Result = map_subclasses(
+               fun(NS, CN, Module) ->
+                       providermanager:call(
+                         Module, {enumerateInstance, NS, CN, LocalOnly,
+                                  DeepInheritance, IncludeQualifiers,
+                                  IncludeClassOrigin, PropertyList})
+               end,
+               ProvidersForClass, NameSpace, ClassName),
+    {reply, Result, State};
 
 handle_call({enumerateInstanceNames, NameSpace, ClassName}, _From, State) ->
     ProvidersForClass = State#state.providersforclass,
