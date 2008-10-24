@@ -149,7 +149,7 @@ handle_call({getInstance, NameSpace, InstanceName, LocalOnly, IncludeQualifiers,
      end,
      State};
 
-handle_call({enumerateInstances, NameSpace, InstanceName, LocalOnly, 
+handle_call({enumerateInstances, NameSpace, ClassName, LocalOnly, 
              DeepInheritance, IncludeQualifiers, IncludeClassOrigin, 
              PropertyList}, _From, State) ->
     ProvidersForClass = State#state.providersforclass,
