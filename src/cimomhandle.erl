@@ -49,6 +49,60 @@ module_for_classes(ProvidersForClass, NameSpace, [H|T]) ->
             [{H, Module}] ++ module_for_classes(ProvidersForClass, NameSpace, T)
     end.
 
+%% Return true if a class is an association class
+
+is_assoc_class(NameSpace, ClassName) ->
+    Result = repository:get_class(
+               NameSpace, ClassName, false, true, false, undefined),
+    case Result of 
+        {error, _} ->
+            {error, {?CIM_ERR_INVALID_PARAMETER}};
+        {ok, ClassDef} ->
+            ClassQuals = ClassDef#class.qualifiers,
+            LowerQuals = lists:map(
+                           fun(Qual) -> 
+                                   {string:to_lower(Qual#qualifier.name), 
+                                    Qual#qualifier.value} end,
+                           ClassQuals),
+            case proplists:get_value("association", LowerQuals) of
+                undefined ->
+                    error_logger:info_msg("undefined~n"),
+                    false;
+                AssocQual ->
+                    error_logger:info_msg("val = ~p~n", [AssocQual]),
+                    string:to_lower(AssocQual) == "true"
+            end
+    end.
+
+%% Return a list of registered association providers
+
+assoc_providers(ProvidersForClass, NameSpace) ->
+    lists:filter(
+      fun({{NS, CN}, _}) -> 
+              NS == NameSpace andalso is_assoc_class(NS, CN) end,
+      ProvidersForClass).
+
+%% Return list of tuples of {Name, ReferenceClass} for each reference
+%% property in a class.
+
+reference_props(NameSpace, ClassName) ->
+    Result = repository:get_class(
+               NameSpace, ClassName, false, true, false, undefined),
+    case Result of 
+        {error, _} ->
+            {error, {?CIM_ERR_INVALID_PARAMETER}};
+        {ok, ClassDef} ->
+            Props = ClassDef#class.properties,
+            lists:map(
+              fun(Prop) ->
+                      {Prop#property_reference.name, 
+                       Prop#property_reference.referenceclass}
+              end,
+              lists:filter(
+                fun(Prop) -> is_record(Prop, property_reference) end,
+                Props))
+    end.
+
 %% Map a function across providers registered for any subclasses of
 %% ClassName in the given NameSpace.  Return a list of results, or
 %% an error tuple for the first error encountered.
