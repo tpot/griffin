@@ -2,6 +2,7 @@
 
 if [ -z "$1" ]; then
     echo "Usage: $1 FILENAME"
+    exit
 fi
 
 python ~/trees/pywbem/pywbem/trunk/mof_compiler.py -n root/cimv2 \
