@@ -1,7 +1,7 @@
 -module(repository).
 -behaviour(gen_server).
 
--export([start_link/1, get_subclasses/3, isa/3]).
+-export([start_link/1, get_subclasses/3, isa/3, get_class/6]).
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, 
          terminate/2, code_change/3]).
@@ -23,6 +23,12 @@ get_subclasses(NameSpace, ClassName, DeepInheritance) ->
     {ok, ClassList} = gen_server:call(
       repository, {getSubclasses, NameSpace, ClassName, DeepInheritance}),
     ClassList.
+
+get_class(NameSpace, ClassName, LocalOnly, IncludeQualifiers, 
+          IncludeClassOrigin, PropertyList) ->
+    gen_server:call(
+      repository, {getClass, NameSpace, ClassName, LocalOnly, 
+                   IncludeQualifiers, IncludeClassOrigin, PropertyList}).
 
 isa(NameSpace, ClassName, BaseClass) ->
     {ok, Result} = gen_server:call(
