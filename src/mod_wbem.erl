@@ -672,6 +672,73 @@ imethod("EnumerateClassNames", NameSpace, Params) ->
             {error, {?CIM_ERR_INVALID_PARAMETER}}
     end;
 
+imethod("Associators", NameSpace, Params) ->
+    AssocClass = proplists:get_value("AssocClass", Params, undefined),
+    ResultClass = proplists:get_value("ResultClass", Params, undefined),
+    Role = proplists:get_value("Role", Params, undefined),
+    ResultRole = proplists:get_value("ResultRole", Params, undefined),
+    IncludeQualifiers = get_bool_value("IncludeQualifiers", Params, false),
+    IncludeClassOrigin = get_bool_value("IncludeClassOrigin", Params, false),
+    PropertyList = proplists:get_value("PropertyList", Params, undefined),    
+    case proplists:split(Params, ["ObjectName", "AssocClass", "ResultClass",
+                                  "Role", "ResultRole", "IncludeQualifiers",
+                                  "IncludeClassOrigin", "PropertyList"]) of
+        {[[{_, ObjectName}], _, _, _, _, _, _, _], []} ->
+            gen_server:call(
+              cimomhandle,
+              {associators, NameSpace, ObjectName, AssocClass, ResultClass,
+               Role, ResultRole, IncludeQualifiers, IncludeClassOrigin,
+               PropertyList});
+        _ ->
+            {error, {?CIM_ERR_INVALID_PARAMETER}}
+    end;
+
+imethod("AssociatorNames", NameSpace, Params) ->
+    AssocClass = proplists:get_value("AssocClass", Params, undefined),
+    ResultClass = proplists:get_value("ResultClass", Params, undefined),
+    Role = proplists:get_value("Role", Params, undefined),
+    ResultRole = proplists:get_value("ResultRole", Params, undefined),
+    case proplists:split(Params, ["ObjectName", "AssocClass", "ResultClass",
+                                  "Role", "ResultRole"]) of
+        {[[{_, ObjectName}], _, _, _, _], []} ->
+            gen_server:call(
+              cimomhandle,
+              {associatorNames, NameSpace, ObjectName, AssocClass, ResultClass,
+               Role, ResultRole});
+        _ ->
+            {error, {?CIM_ERR_INVALID_PARAMETER}}
+    end;
+
+imethod("References", NameSpace, Params) ->
+    ResultClass = proplists:get_value("ResultClass", Params, undefined),
+    Role = proplists:get_value("Role", Params, undefined),
+    IncludeQualifiers = get_bool_value("IncludeQualifiers", Params, false),
+    IncludeClassOrigin = get_bool_value("IncludeClassOrigin", Params, false),
+    PropertyList = proplists:get_value("PropertyList", Params, undefined),    
+    case proplists:split(Params, ["ObjectName", "ResultClass", "Role", 
+                                  "IncludeQualifiers", "IncludeClassOrigin", 
+                                  "PropertyList"]) of
+        {[[{_, ObjectName}], _, _, _, _, _], []} ->
+            gen_server:call(
+              cimomhandle,
+              {references, NameSpace, ObjectName, ResultClass, Role, 
+               IncludeQualifiers, IncludeClassOrigin, PropertyList});
+        _ ->
+            {error, {?CIM_ERR_INVALID_PARAMETER}}
+    end;
+    
+imethod("ReferenceNames", NameSpace, Params) ->
+    ResultClass = proplists:get_value("ResultClass", Params, undefined),
+    Role = proplists:get_value("Role", Params, undefined),
+    case proplists:split(Params, ["ObjectName", "ResultClass", "Role"]) of
+        {[[{_, ObjectName}], _, _], []} ->
+            gen_server:call(
+              cimomhandle,
+              {referenceNames, NameSpace, ObjectName, ResultClass, Role});
+        _ ->
+            {error, {?CIM_ERR_INVALID_PARAMETER}}
+    end;
+
 imethod(MethodName, _NameSpace, _Params) ->
     {error, {?CIM_ERR_INVALID_PARAMETER, 
              io_lib:format("Unknown method \"~s\"", [MethodName])}}.
