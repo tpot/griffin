@@ -3,22 +3,35 @@
 
 -include_lib("cim.hrl").
 
--export([start_link/0, register_provider/3, unregister_provider/2]).
+-export([start_link/0, start_link/1, register_provider/3, 
+         unregister_provider/2, stop/1]).
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, 
          terminate/2, code_change/3]).
 
 -record(state, {
+          repository,
           providersforclass = []
          }).
 
 -define(SERVER, ?MODULE).
 
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).    
+%% Start server with repository from process dictionary
 
-init([]) ->
-    {ok, #state{}}.
+start_link() ->
+    Repository = whereis(repository),
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [Repository], []).
+
+%% Start server with specified repository
+
+start_link(Repository) ->
+    gen_server:start_link(?MODULE, [Repository], []).
+
+init(Repository) ->
+    {ok, #state{repository = Repository}}.
+
+stop(Pid) ->
+    gen_server:call(Pid, stop).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -51,9 +64,9 @@ module_for_classes(ProvidersForClass, NameSpace, [H|T]) ->
 
 %% Return true if a class is an association class
 
-is_assoc_class(NameSpace, ClassName) ->
+is_assoc_class(Repository, NameSpace, ClassName) ->
     Result = repository:get_class(
-               NameSpace, ClassName, false, true, false, undefined),
+               Repository, NameSpace, ClassName, false, true, false, undefined),
     case Result of 
         {error, _} ->
             {error, {?CIM_ERR_INVALID_PARAMETER}};
@@ -64,30 +77,37 @@ is_assoc_class(NameSpace, ClassName) ->
                                    {string:to_lower(Qual#qualifier.name), 
                                     Qual#qualifier.value} end,
                            ClassQuals),
+            error_logger:info_msg("Quals = ~p~n", [ClassQuals]),
             case proplists:get_value("association", LowerQuals) of
                 undefined ->
-                    error_logger:info_msg("undefined~n"),
+                    error_logger:info_msg("~s is NOT assoc~n", [ClassName]),
                     false;
                 AssocQual ->
-                    error_logger:info_msg("val = ~p~n", [AssocQual]),
-                    string:to_lower(AssocQual) == "true"
+                    X = string:to_lower(AssocQual) == "true",
+                    case X of
+                        true ->
+                            error_logger:info_msg("~s is assoc~n", [ClassName]);
+                        false ->
+                            error_logger:info_msg("~s is NOT assoc~n", [ClassName])
+                    end,
+                    X
             end
     end.
 
 %% Return a list of registered association providers
 
-assoc_providers(ProvidersForClass, NameSpace) ->
+assoc_providers(Repository, ProvidersForClass, NameSpace) ->
     lists:filter(
       fun({{NS, CN}, _}) -> 
-              NS == NameSpace andalso is_assoc_class(NS, CN) end,
+              NS == NameSpace andalso is_assoc_class(Repository, NS, CN) end,
       ProvidersForClass).
 
 %% Return list of tuples of {Name, ReferenceClass} for each reference
 %% property in a class.
 
-reference_props(NameSpace, ClassName) ->
+reference_props(Repository, NameSpace, ClassName) ->
     Result = repository:get_class(
-               NameSpace, ClassName, false, true, false, undefined),
+               Repository, NameSpace, ClassName, false, true, false, undefined),
     case Result of 
         {error, _} ->
             {error, {?CIM_ERR_INVALID_PARAMETER}};
@@ -107,10 +127,10 @@ reference_props(NameSpace, ClassName) ->
 %% ClassName in the given NameSpace.  Return a list of results, or
 %% an error tuple for the first error encountered.
 
-map_subclasses(Fun, ProvidersForClass, NameSpace, ClassName) ->
+map_subclasses(Repository, Fun, ProvidersForClass, NameSpace, ClassName) ->
     %% Get list of classes to fold over
     ClassList = [ClassName] ++ 
-        repository:get_subclasses(NameSpace, ClassName, true),
+        repository:get_subclasses(Repository, NameSpace, ClassName, true),
     %% Get registered providers for class list
     ModuleList = module_for_classes(ProvidersForClass, NameSpace, ClassList),
     %% Call fun on each provider but abort on first error
@@ -165,8 +185,9 @@ handle_call({unregisterProvider, NameSpace, ClassName}, _From, State) ->
 
 handle_call({getClass, NameSpace, ClassName, LocalOnly, IncludeQualifiers,
              IncludeClassOrigin, PropertyList}, _From, State) ->
+    Repository = State#state.repository,
     Result = gen_server:call(
-               repository,
+               Repository,
                {getClass, NameSpace, ClassName, LocalOnly, IncludeQualifiers,
                 IncludeClassOrigin, PropertyList}),
     {reply, Result, State};
@@ -174,16 +195,18 @@ handle_call({getClass, NameSpace, ClassName, LocalOnly, IncludeQualifiers,
 handle_call({enumerateClasses, NameSpace, ClassName, DeepInheritance,
              LocalOnly, IncludeQualifiers, IncludeClassOrigin}, 
             _From, State) ->
+    Repository = State#state.repository,
     Result = gen_server:call(
-               repository,
+               Repository,
                {enumerateClasses, NameSpace, ClassName, DeepInheritance,
                 LocalOnly, IncludeQualifiers, IncludeClassOrigin}),
     {reply, Result, State};
 
 handle_call({enumerateClassNames, NameSpace, ClassName, DeepInheritance},
             _From, State) ->
+    Repository = State#state.repository,
     Result = gen_server:call(
-               repository,
+               Repository,
                {enumerateClassNames, NameSpace, ClassName, DeepInheritance}),
     {reply, Result, State};
 
@@ -206,8 +229,10 @@ handle_call({getInstance, NameSpace, InstanceName, LocalOnly, IncludeQualifiers,
 handle_call({enumerateInstances, NameSpace, ClassName, LocalOnly, 
              DeepInheritance, IncludeQualifiers, IncludeClassOrigin, 
              PropertyList}, _From, State) ->
+    Repository = State#state.repository,
     ProvidersForClass = State#state.providersforclass,
     Result = map_subclasses(
+               Repository,
                fun(NS, CN, Module) ->
                        providermanager:call(
                          Module, {enumerateInstance, NS, CN, LocalOnly,
@@ -218,8 +243,10 @@ handle_call({enumerateInstances, NameSpace, ClassName, LocalOnly,
     {reply, Result, State};
 
 handle_call({enumerateInstanceNames, NameSpace, ClassName}, _From, State) ->
+    Repository = State#state.repository,    
     ProvidersForClass = State#state.providersforclass,
     Result = map_subclasses(
+               Repository,
                fun(NS, CN, Module) ->
                        providermanager:call(
                          Module, {enumerateInstanceNames, NS, CN}) 
@@ -261,17 +288,20 @@ handle_call({setProperty, _NameSpace, _InstanceName, _PropertyName, _NewValue},
 %% Schema Manipulation
 
 handle_call({createClass, NameSpace, NewClass}, _From, State) ->
-    Result = gen_server:call(repository, {createClass, NameSpace, NewClass}),
+    Repository = State#state.repository,
+    Result = gen_server:call(Repository, {createClass, NameSpace, NewClass}),
     {reply, Result, State};
 
 handle_call({modifyClass, NameSpace, ModifiedClass}, _From, State) ->
+    Repository = State#state.repository,
     Result = gen_server:call( 
-               repository, {modifyClass, NameSpace, ModifiedClass}),
+               Repository, {modifyClass, NameSpace, ModifiedClass}),
     {reply, Result, State};
 
 handle_call({deleteClass, NameSpace, ClassName}, _From, State) ->
+    Repository = State#state.repository,
     Result = gen_server:call(
-               repository, {deleteClass, NameSpace, ClassName}),
+               Repository, {deleteClass, NameSpace, ClassName}),
     {reply, Result, State};
 
 %% Instance Manipulation
@@ -345,20 +375,24 @@ handle_call({execQuery, _QueryLanguage, _Query}, _From, State) ->
 %% Qualifier Declaration
 
 handle_call({getQualifier, NameSpace, Name}, _From, State) ->
-    Result = gen_server:call(repository, {getQualifier, NameSpace, Name}),
+    Repository = State#state.repository,
+    Result = gen_server:call(Repository, {getQualifier, NameSpace, Name}),
     {reply, Result, State};
 
 handle_call({setQualifier, NameSpace, QualifierDeclaration}, _From, State) ->
+    Repository = State#state.repository,
     Result = gen_server:call(
-               repository, {setQualifier, NameSpace, QualifierDeclaration}),
+               Repository, {setQualifier, NameSpace, QualifierDeclaration}),
     {reply, Result, State};
 
 handle_call({deleteQualifier, NameSpace, Name}, _From, State) ->
-    Result = gen_server:call(repository, {deleteQualifier, NameSpace, Name}),
+    Repository = State#state.repository,
+    Result = gen_server:call(Repository, {deleteQualifier, NameSpace, Name}),
     {reply, Result, State};
 
 handle_call({enumerateQualifiers, NameSpace}, _From, State) ->
-    Result = gen_server:call(repository, {enumerateQualifiers, NameSpace}),
+    Repository = State#state.repository,
+    Result = gen_server:call(Repository, {enumerateQualifiers, NameSpace}),
     {reply, Result, State};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
