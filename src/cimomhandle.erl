@@ -20,12 +20,12 @@
 
 start_link() ->
     Repository = whereis(repository),
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [Repository], []).
+    gen_server:start_link({local, ?SERVER}, ?MODULE, Repository, []).
 
 %% Start server with specified repository
 
 start_link(Repository) ->
-    gen_server:start_link(?MODULE, [Repository], []).
+    gen_server:start_link(?MODULE, Repository, []).
 
 init(Repository) ->
     {ok, #state{repository = Repository}}.
