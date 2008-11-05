@@ -6,7 +6,7 @@
 %% The test creates a cimomhandle and repository process, runs the
 %% tests, then tears the cimomhandle and repository down.
 
-make(Fun, MakeTests) ->
+make_testspec(Fun, Test) ->
     {foreach,
      %% Setup
      fun() -> 
@@ -23,27 +23,26 @@ make(Fun, MakeTests) ->
              cimomhandle:stop(CIMOMHandle),
              repository:stop(Repository)
      end,
-     %% Tests to run
-     MakeTests}.
+     %% Run test
+     [fun({_Repository, CIMOMHandle}) -> Test(CIMOMHandle) end]}.
 
-demo_test_() ->
+getclass_test_() ->
     ClassName = "CIM_A",
     ClassDef = {class,ClassName,
                 undefined,
                 [],
                 [{property,"A",ClassName,undefined,"string",[],undefined}],
                 []},
-    make(
+    make_testspec(
       fun(CIMOMHandle) -> 
               gen_server:call(CIMOMHandle, 
                               {createClass, "root/cimv2", ClassDef})
       end,
-      [fun({_Repository, CIMOMHandle}) ->
-               {"1st", ?_test(begin
-                                  {ok, Class} = gen_server:call(
-                                                  CIMOMHandle, 
-                                                  {getClass, "root/cimv3", ClassName, false, true, true, undefined}),
-                                  ?_assertEqual(ClassDef, Class)
-                              end)}
-                                  
-       end]).
+      fun(CIMOMHandle) ->
+               ?_test(begin
+                          {ok, Class} = gen_server:call(
+                                          CIMOMHandle, 
+                                          {getClass, "root/cimv3", ClassName, false, true, true, undefined}),
+                          ?_assertEqual(ClassDef, Class)
+                      end)
+       end).
