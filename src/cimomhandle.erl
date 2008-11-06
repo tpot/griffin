@@ -354,8 +354,24 @@ handle_call({associators, _NameSpace, _ObjectName, _AssocClass, _ResultClass,
              _PropertyList}, _From, State) ->
     {reply, {error, {?CIM_ERR_NOT_SUPPORTED}}, State};
     
-handle_call({associatorNames, _NameSpace, _ObjectName, _AssocClass, 
+handle_call({associatorNames, NameSpace, ObjectName, _AssocClass, 
              _ResultClass, _Role, _ResultRole}, _From, State) ->
+    Repository = State#state.repository,
+    ProvidersForClass = State#state.providersforclass,
+    %% Return association providers that have a reference property of
+    %% ObjectName's class or subclass.
+    ClassName = ObjectName#instancename.classname,
+    ClassList = 
+        [ClassName] ++ repository:get_subclasses(
+                         Repository, NameSpace, ClassName, true),
+    Providers = 
+        lists:filter(
+          fun({{NS, CN}, Module}) -> 
+                  error_logger:info_msg("checking = ~p~n", [CN]),
+                  lists:member(CN, ClassList)
+          end,
+          assoc_providers(Repository, ProvidersForClass, NameSpace)),
+    error_logger:info_msg("providers = ~p~n", [Providers]),
     {reply, {error, {?CIM_ERR_NOT_SUPPORTED}}, State};
 
 handle_call({references, _NameSpace, _ObjectName, _ResultClass, _Role, 
