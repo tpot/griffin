@@ -1,7 +1,8 @@
 -module(wsman_parse).
 
 -export([doc/1, string/1, any_string/1]).
--export(['Envelope'/3, 'Header'/3, 'Body'/3]).
+-export(['Envelope'/3, 'Header'/3, 'Action'/3, 'To'/3, 'ResourceURI'/3,
+         'MessageID'/3, 'ReplyTo'/3, 'Address'/3, 'SelectorSet'/3, 'Body'/3]).
 
 -include_lib("xmerl/include/xmerl.hrl").
 
@@ -11,8 +12,9 @@
 
 %% SOAP envelope
 
-'Envelope'(?soap, _Elt, [{'Header', [Header]}, {'Body', [Body]}]) ->
-    {'SOAP:Envelope',
+'Envelope'(?soap, _Elt, 
+           [{{?soap, 'Header'}, [Header]}, {{?soap, 'Body'}, [Body]}]) ->
+    {'s:Envelope',
      [],
      [parse(Header), parse(Body)]}.
 
@@ -22,7 +24,7 @@
     Required = [{?wsa, 'To'}, {?wsa, 'Action'}, {?wsa, 'MessageID'},
                 {?wsman, 'ResourceURI'}, {?wsman, 'SelectorSet'}],
     Optional = [{?wsa, 'ReplyTo'}, {?wsa, 'FaultTo'}],
-    {'Header',
+    {'s:Header',
      [],
      parse_children(Children, Required, Optional)}.
 
@@ -37,8 +39,13 @@
 'MessageID'(?wsa, _Elt, [{'#xmlText', Value}]) ->
     {'wsa:MessageID', [], [Value]}.
 
-'ReplyTo'(?wsa, _Elt, [{'#xmlText', Value}]) ->
-    {'wsa:ReplyTo', [], [Value]}.
+'ReplyTo'(?wsa, _Elt, [{{?wsa, 'Address'}, [Address]}]) ->
+    {'wsa:ReplyTo', 
+     [], 
+     [parse(Address)]}.
+
+'Address'(?wsa, _Elt, [{'#xmlText', Value}]) ->
+    {'wsa:Address', [], [Value]}.
 
 'FaultTo'(?wsa, _Elt, [{'#xmlText', Value}]) ->
     {'wsa:FaultTo', [], [Value]}.
@@ -67,13 +74,12 @@
 %% Convert list of xmlElement records to tuples
 
 elts_to_tuple(EltList) ->
-    error_logger:info_msg("Got EltList = ~p~n", [EltList]),
     elts_to_tuple(EltList, []).
 
 elts_to_tuple([H | T], Result) when is_record(H, xmlElement) ->
     {Elts, Rest} = lists:splitwith(
                      fun(X) -> X#xmlElement.name == H#xmlElement.name end, T),
-    elts_to_tuple(Rest, [{H#xmlElement.name, [H] ++ Elts}] ++ Result);
+    elts_to_tuple(Rest, [{xmlns(H), [H] ++ Elts}] ++ Result);
 
 elts_to_tuple([H | T], Result) when is_record(H, xmlText) ->
     {Elts, Rest} = lists:splitwith(
@@ -113,11 +119,9 @@ xmlns(Elt) ->
 %% @spec parse(xmlElement()) -> term()
 
 parse(Elt) ->
-    {Namespace, _Tag} = xmlns(Elt),
-    error_logger:info_msg("Got namespace ~p~n", [Namespace]),
+    {Namespace, Tag} = xmlns(Elt),
     Params = [Namespace, Elt] ++ [elts_to_tuple(Elt#xmlElement.content)],
-    error_logger:info_msg("Got params ~p~n", [Params]),
-    apply(?MODULE, Elt#xmlElement.name, Params).
+    apply(?MODULE, Tag, Params).
 
 %% Parse a list of single-valued children from a list of required and
 %% optional elements.
