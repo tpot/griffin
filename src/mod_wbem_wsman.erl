@@ -5,9 +5,10 @@
 -include_lib("inets/src/httpd.hrl").
 -include_lib("xmerl/include/xmerl.hrl").
 
-exec(RequestTT) ->
-    error_logger:info_msg("Request = ~p~n", [RequestTT]),
-    {'FOO', [], []}.
+%% Execute request
+
+exec(TT) ->
+    throw({error, io_lib:format("Don't know how to parse tupletree ~p", [TT])}).
 
 %% Generate a SOAP fault
 
@@ -72,10 +73,15 @@ wsman_request(Doc) ->
         %% Request succeeded
         RequestTT ->
             case (catch exec(RequestTT)) of
-                %% Exception
+                %% Exit
                 {'EXIT', _Reason} ->
                     Fault = soap_fault("env:Receiver", "wsman:InternalError"),
                     {500, [], 
+                     lists:flatten(xmerl:export_simple([Fault], xmerl_xml))};
+                %% Exception
+                {error, _Reason} ->
+                    Fault = soap_fault("env:Receiver", "wsman:InternalError"),
+                    {500, [],
                      lists:flatten(xmerl:export_simple([Fault], xmerl_xml))};
                 %% Normal result
                 ResponseTT -> 
