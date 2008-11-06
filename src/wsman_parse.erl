@@ -6,21 +6,21 @@
 
 -include_lib("xmerl/include/xmerl.hrl").
 
--define(soap, 'http://www.w3.org/2003/05/soap-envelope').
+-define(s, 'http://www.w3.org/2003/05/soap-envelope').
 -define(wsman, 'http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd').
 -define(wsa, 'http://schemas.xmlsoap.org/ws/2004/08/addressing').
 
 %% SOAP envelope
 
-'Envelope'(?soap, _Elt, 
-           [{{?soap, 'Header'}, [Header]}, {{?soap, 'Body'}, [Body]}]) ->
+'Envelope'(?s, _Elt, 
+           [{{?s, 'Header'}, [Header]}, {{?s, 'Body'}, [Body]}]) ->
     {'s:Envelope',
      [],
      [parse(Header), parse(Body)]}.
 
 %% SOAP header
 
-'Header'(?soap, _Elt, Children) ->
+'Header'(?s, _Elt, Children) ->
     Required = [{?wsa, 'To'}, {?wsa, 'Action'}, {?wsa, 'MessageID'},
                 {?wsman, 'ResourceURI'}, {?wsman, 'SelectorSet'}],
     Optional = [{?wsa, 'ReplyTo'}, {?wsa, 'FaultTo'}],
@@ -66,7 +66,7 @@
 
 %% SOAP body
 
-'Body'(?soap, _Elt, _Children) ->
+'Body'(?s, _Elt, _Children) ->
     {'Body',
      [],
      []}.
