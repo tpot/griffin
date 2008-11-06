@@ -3,4 +3,5 @@
 
 griffin_test_() ->
     [{module, mod_wbem_test},
-     {module, cimxml_parse_test}].
+     {module, cimxml_parse_test},
+     {module, cimomhandle_test}].

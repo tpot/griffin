@@ -4,7 +4,7 @@
 
 %% Create a cimomhandle test spec from a function and list of tests.
 %% The test creates a cimomhandle and repository process, runs the
-%% tests, then tears the cimomhandle and repository down.
+%% test, then tears the cimomhandle and repository down.
 
 make_testspec(Setup, Test) ->
     {foreach,
@@ -34,10 +34,12 @@ getclass_test_() ->
                 [{property,"A",ClassName,undefined,"string",[],undefined}],
                 []},
     make_testspec(
+      %% Create a class
       fun(CIMOMHandle) -> 
               gen_server:call(CIMOMHandle, 
                               {createClass, "root/cimv2", ClassDef})
       end,
+      %% Check class against definition
       fun(CIMOMHandle) ->
               {ok, Class} = gen_server:call(
                               CIMOMHandle, 
