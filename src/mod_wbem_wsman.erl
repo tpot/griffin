@@ -15,24 +15,24 @@ exec(TT) ->
 %% TODO: Fix hardcoded xml namespace names
 
 soap_fault(Code, Subcode, Reason, Detail) ->
-    {'env:Envelope', 
-     [{'xmlns:env', "http://www.w3.org/2003/05/soap-envelope"}],
-     [{'env:Body', 
+    {'s:Envelope', 
+     [{'xmlns:s', "http://www.w3.org/2003/05/soap-envelope"}],
+     [{'s:Body', 
        [],
-       [{'env:Fault', 
+       [{'s:Fault', 
          [], 
          [soap_fault_code(Code, Subcode), 
           soap_fault_reason(Reason), 
           soap_fault_detail(Detail)]}]}]}.
 
 soap_fault_code(Code, Subcode) ->
-    {'env:Code', [],
-     [{'env:Value', [], [#xmlText{value = Code}]},
-      {'env:Subcode', [], 
-       [{'env:Value', [], [#xmlText{value = Subcode}]}]}]}.
+    {'s:Code', [],
+     [{'s:Value', [], [#xmlText{value = Code}]},
+      {'s:Subcode', [], 
+       [{'s:Value', [], [#xmlText{value = Subcode}]}]}]}.
 
 soap_fault_reason(Reason) ->
-    {'env:Reason', 
+    {'s:Reason', 
      [],
      case Reason of
          undefined ->
@@ -42,7 +42,7 @@ soap_fault_reason(Reason) ->
      end}.
 
 soap_fault_detail(Detail) ->
-    {'env:Detail', 
+    {'s:Detail', 
      [],
      case Detail of
          undefined ->
@@ -63,24 +63,24 @@ wsman_request(Doc) ->
     case (catch wsman_parse:doc(Doc)) of
         %% XML did not conform to DTD
         {error, {_ErrorType, _Description}} ->
-            Fault = soap_fault("env:Sender", "wsman:SchemaValidationError"),
+            Fault = soap_fault("s:Sender", "wsman:SchemaValidationError"),
             {500, [], lists:flatten(xmerl:export_simple([Fault], xmerl_xml))};
         %% WS-Man validator crashed - oops
         {'EXIT', Reason} ->
             error_logger:error_msg("wsman_parse: ~p~n", [Reason]),
-            Fault = soap_fault("env:Receiver", "wsman:InternalError"),
+            Fault = soap_fault("s:Receiver", "wsman:InternalError"),
             {500, [], lists:flatten(xmerl:export_simple([Fault], xmerl_xml))};
         %% Request succeeded
         RequestTT ->
             case (catch exec(RequestTT)) of
                 %% Exit
                 {'EXIT', _Reason} ->
-                    Fault = soap_fault("env:Receiver", "wsman:InternalError"),
+                    Fault = soap_fault("s:Receiver", "wsman:InternalError"),
                     {500, [], 
                      lists:flatten(xmerl:export_simple([Fault], xmerl_xml))};
                 %% Exception
                 {error, _Reason} ->
-                    Fault = soap_fault("env:Receiver", "wsman:InternalError"),
+                    Fault = soap_fault("s:Receiver", "wsman:InternalError"),
                     {500, [],
                      lists:flatten(xmerl:export_simple([Fault], xmerl_xml))};
                 %% Normal result
@@ -95,7 +95,7 @@ do(_Headers, Body) ->
     case (catch xmerl_scan:string(Body, [{quiet, true}])) of
         %% TODO: pass error description back in HTTP headers
         {'EXIT', _} -> 
-            Fault = soap_fault("env:Sender", "wsman:SchemaValidationError"),
+            Fault = soap_fault("s:Sender", "wsman:SchemaValidationError"),
             {500, [], lists:flatten(xmerl:export_simple([Fault], xmerl_xml))};
         {Doc, _Trailer} ->
             wsman_request(Doc)
