@@ -61,13 +61,13 @@
 'Selector'(?wsman, Elt, [{'xmlText', Value}]) ->
     Name = xml:get_attr('Name', Elt),
     {'wsman:Selector',
-     [{'Name', Name}],
+     [{'wsman:Name', Name}],
      [Value]}.
 
 %% SOAP body
 
 'Body'(?s, _Elt, _Children) ->
-    {'Body',
+    {'s:Body',
      [],
      []}.
 
