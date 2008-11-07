@@ -60,6 +60,12 @@ soap_fault_detail(Detail) ->
 uuid() ->
     ["urn:uuid:"] ++ uuid:to_string(uuid:v4()).
 
+response_headers(MessageID, ReplyTo, Action) ->
+    [{'wsa:To', [], [ReplyTo]},
+     {'wsa:RelatesTo', [], [MessageID]},
+     {'wsa:MessageID', [], [uuid()]},
+     {'wsa:Action', [], [atom_to_list(Action)]}].
+
 %% Execute request
 
 exec(?ActionGet, To, ResourceURI, MessageID, ReplyTo, SelectorSet) ->
@@ -67,20 +73,14 @@ exec(?ActionGet, To, ResourceURI, MessageID, ReplyTo, SelectorSet) ->
      [{'xmlns:s', ?s}, {'xmlns:wsa', ?wsa}],
      [{'s:Header', 
        [],
-       [{'wsa:To', [], [ReplyTo]},
-        {'wsa:RelatesTo', [], [MessageID]},
-        {'wsa:MessageID', [], [uuid()]},
-        {'wsa:Action', [], [atom_to_list(?ActionFault)]}]}]};
+       response_headers(MessageID, ReplyTo, ?ActionGetResponse)}]};
 
 exec(Action, To, ResourceURI, MessageID, ReplyTo, SelectorSet) ->
     {'s:Envelope',
      [{'xmlns:s', ?s}, {'xmlns:wsa', ?wsa}],
      [{'s:Header', 
        [],
-       [{'wsa:To', [], [ReplyTo]},
-        {'wsa:RelatesTo', [], [MessageID]},
-        {'wsa:MessageID', [], [uuid()]},
-        {'wsa:Action', [], [atom_to_list(?ActionFault)]}]},
+       response_headers(MessageID, ReplyTo, ?ActionFault)},
       soap_fault_body('s:Sender', 'wsa:ActionNotSupported', 
                       "Action not supported", [atom_to_list(Action)])]}.
 
