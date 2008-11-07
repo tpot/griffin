@@ -74,12 +74,14 @@ wsman_request(Doc) ->
         RequestTT ->
             case (catch exec(RequestTT)) of
                 %% Exit
-                {'EXIT', _Reason} ->
+                {'EXIT', Reason} ->
+                    error_logger:error_msg("~p~n", [Reason]),
                     Fault = soap_fault("s:Receiver", "wsman:InternalError"),
                     {500, [], 
                      lists:flatten(xmerl:export_simple([Fault], xmerl_xml))};
                 %% Exception
-                {error, _Reason} ->
+                {error, Reason} ->
+                    error_logger:error_msg("~p~n", [Reason]),
                     Fault = soap_fault("s:Receiver", "wsman:InternalError"),
                     {500, [],
                      lists:flatten(xmerl:export_simple([Fault], xmerl_xml))};
