@@ -2,7 +2,8 @@
 
 -export([doc/1, string/1, any_string/1]).
 -export(['Envelope'/3, 'Header'/3, 'Action'/3, 'To'/3, 'ResourceURI'/3,
-         'MessageID'/3, 'ReplyTo'/3, 'Address'/3, 'SelectorSet'/3, 'Body'/3]).
+         'MessageID'/3, 'ReplyTo'/3, 'Address'/3, 'SelectorSet'/3, 
+         'Selector'/3, 'Body'/3]).
 
 -include_lib("xmerl/include/xmerl.hrl").
 
@@ -53,15 +54,15 @@
 'ResourceURI'(?wsman, _Elt, [{'#xmlText', Value}]) ->
     {'wsman:ResourceURI', [], [Value]}.
 
-'SelectorSet'(?wsman, _Elt, [{{?wsman, Selector}, Selectors}]) ->
+'SelectorSet'(?wsman, _Elt, [{{?wsman, 'Selector'}, Selectors}]) ->
     {'wsman:SelectorSet', 
      [], 
-     [parse(Child) || {_Tag, Child} <- Selectors]}.
+     [parse(Selector) || Selector <- Selectors]}.
 
-'Selector'(?wsman, Elt, [{'xmlText', Value}]) ->
+'Selector'(?wsman, Elt, [{'#xmlText', Value}]) ->
     Name = xml:get_attr('Name', Elt),
     {'wsman:Selector',
-     [{'wsman:Name', Name}],
+     [{'wsman:Name', Name#xmlAttribute.value}],
      [Value]}.
 
 %% SOAP body
