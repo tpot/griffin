@@ -6,14 +6,72 @@
 -include_lib("xmerl/include/xmerl.hrl").
 -include_lib("wsman.hrl").
 
+%% TODO: Fix hardcoded xml namespace names
+
+soap_fault(Code, Subcode, Reason, Detail) ->
+    {'s:Envelope', 
+     [{'xmlns:s', ?s}],
+     [soap_fault_body(Code, Subcode, Reason, Detail)]}.
+
+soap_fault(Code, Subcode, Reason) ->
+    soap_fault(Code, Subcode, Reason, undefined).
+
+soap_fault(Code, Subcode) ->
+    soap_fault(Code, Subcode, undefined, undefined).
+
+soap_fault_body(Code, Subcode, Reason, Detail) ->
+    {'s:Body', 
+     [],
+     [{'s:Fault', 
+       [], 
+       [soap_fault_code(Code, Subcode), 
+        soap_fault_reason(Reason), 
+        soap_fault_detail(Detail)]}]}.
+
+soap_fault_code(Code, Subcode) ->
+    {'s:Code', [],
+     [{'s:Value', [], [Code]},
+      {'s:Subcode', [], 
+       [{'s:Value', [], [Subcode]}]}]}.
+
+soap_fault_reason(Reason) ->
+    {'s:Reason', 
+     [],
+     case Reason of
+         undefined ->
+             [];
+         _ ->
+             [Reason]
+     end}.
+
+soap_fault_detail(Detail) ->
+    {'s:Detail', 
+     [],
+     case Detail of
+         undefined ->
+             [];
+         _ ->
+             [Detail]
+     end}.
+
 %% Execute request
 
-exec(Body, Header) ->
+exec(Action, To, ResourceURI, MessageID, ReplyTo, SelectorSet) ->
+    {'s:Envelope',
+     [{'xmlns:s', ?s}, {'xmlns:wsa', ?wsa}],
+     [{'s:Header', 
+       [],
+       [{'wsa:To', [], [ReplyTo]},
+        {'wsa:RelatesTo', [], [MessageID]},
+        {'wsa:Action', [], [atom_to_list(?ActionFault)]}]},
+      soap_fault_body('s:Sender', 'wsa:ActionNotSupported', 
+                      "Action not supported", Action)]}.
+exec(_Body, Header) ->
     Props = lists:map(fun({Key, _, Value}) -> {Key, Value} end, Header),
     To = proplists:get_value('wsa:To', Props),
     Action = proplists:get_value('wsa:Action', Props),
     ResourceURI = proplists:get_value('wsa:ResourceURI', Props),
-    MessageID = proplists:get_value('wsa:MessageID', Props),
+    [MessageID] = proplists:get_value('wsa:MessageID', Props),
     [{'wsa:Address', [], [ReplyTo]}] = 
         proplists:get_value('wsa:ReplyTo', Props),
     SelectorSet = 
@@ -29,65 +87,16 @@ exec(Body, Header) ->
                   end, 
                   Selectors)
         end,
-    error_logger:info_msg("SelectorSet = ~p~n", [SelectorSet]),
-    [{'s:Header', [], []},
-     {'s:Body', [], []}].
+    exec(Action, To, ResourceURI, MessageID, ReplyTo, SelectorSet).
      
 exec({'s:Envelope', [], [{'s:Header', [], Header}, {'s:Body', [], Body}]}) ->
-    {'s:Envelope',
-     [{'xmlns:s', ?s}],     
-     exec(Body, Header)};
+     exec(Body, Header);
 
 exec(TT) ->
     error_logger:info_msg("TT = ~p~n", [TT]),
     throw({error, io_lib:format("Don't know how to parse tupletree ~p", [TT])}).
 
 %% Generate a SOAP fault
-
-%% TODO: Fix hardcoded xml namespace names
-
-soap_fault(Code, Subcode, Reason, Detail) ->
-    {'s:Envelope', 
-     [{'xmlns:s', ?s}],
-     [{'s:Body', 
-       [],
-       [{'s:Fault', 
-         [], 
-         [soap_fault_code(Code, Subcode), 
-          soap_fault_reason(Reason), 
-          soap_fault_detail(Detail)]}]}]}.
-
-soap_fault_code(Code, Subcode) ->
-    {'s:Code', [],
-     [{'s:Value', [], [#xmlText{value = Code}]},
-      {'s:Subcode', [], 
-       [{'s:Value', [], [#xmlText{value = Subcode}]}]}]}.
-
-soap_fault_reason(Reason) ->
-    {'s:Reason', 
-     [],
-     case Reason of
-         undefined ->
-             [];
-         _ ->
-             [#xmlText{value = Reason}]
-     end}.
-
-soap_fault_detail(Detail) ->
-    {'s:Detail', 
-     [],
-     case Detail of
-         undefined ->
-             [];
-         _ ->
-             [Detail]
-     end}.
-
-soap_fault(Code, Subcode, Reason) ->
-    soap_fault(Code, Subcode, Reason, undefined).
-
-soap_fault(Code, Subcode) ->
-    soap_fault(Code, Subcode, undefined, undefined).
 
 %% Process a WS-Man request
 

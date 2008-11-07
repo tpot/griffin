@@ -20,3 +20,4 @@
         'http://schemas.xmlsoap.org/ws/2004/09/enumeration/Release').
 -define(ActionSubscribe,
         'http://schemas.xmlsoap.org/ws/2004/08/eventing/Subscribe').
+-define(ActionFault, 'http://schemas.xmlsoap.org/ws/2004/08/addressing/fault').
