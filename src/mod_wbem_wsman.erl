@@ -54,6 +54,9 @@ soap_fault_detail(Detail) ->
              [Detail]
      end}.
 
+%% http://github.com/travis/erlang-uuid/tree/master/uuid.erl
+%% TODO: check license
+
 uuid() ->
     ["urn:uuid:"] ++ uuid:to_string(uuid:v4()).
 
