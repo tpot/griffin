@@ -7,7 +7,38 @@
 
 %% Execute request
 
+exec(Body, Header) ->
+    Props = lists:map(fun({Key, _, Value}) -> {Key, Value} end, Header),
+    To = proplists:get_value('wsa:To', Props),
+    Action = proplists:get_value('wsa:Action', Props),
+    ResourceURI = proplists:get_value('wsa:ResourcecURI', Props),
+    MessageID = proplists:get_value('wsa:MessageID', Props),
+    [{'wsa:Address', [], [ReplyTo]}] = 
+        proplists:get_value('wsa:ReplyTo', Props),
+    SelectorSet = 
+        case proplists:get_value('wsman:SelectorSet', Props) of
+            [] ->
+                [];
+            undefined ->
+                [];
+            Selectors ->
+                lists:map(
+                  fun({'wsman:Selector', [{'wsman:Name', Name}], [Value]}) ->
+                          {Name, Value} 
+                  end, 
+                  Selectors)
+        end,
+    error_logger:info_msg("SelectorSet = ~p~n", [SelectorSet]),
+    [{'s:Header', [], []},
+     {'s:Body', [], []}].
+     
+exec({'s:Envelope', [], [{'s:Header', [], Header}, {'s:Body', [], Body}]}) ->
+    {'s:Envelope',
+     [{'xmlns:s', "http://www.w3.org/2003/05/soap-envelope"}],     
+     exec(Body, Header)};
+
 exec(TT) ->
+    error_logger:info_msg("TT = ~p~n", [TT]),
     throw({error, io_lib:format("Don't know how to parse tupletree ~p", [TT])}).
 
 %% Generate a SOAP fault
