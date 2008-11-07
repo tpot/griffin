@@ -79,11 +79,12 @@ exec(Action, To, ResourceURI, MessageID, ReplyTo, SelectorSet) ->
         {'wsa:MessageID', [], [uuid()]},
         {'wsa:Action', [], [atom_to_list(?ActionFault)]}]},
       soap_fault_body('s:Sender', 'wsa:ActionNotSupported', 
-                      "Action not supported", Action)]}.
+                      "Action not supported", [atom_to_list(Action)])]}.
+
 exec(_Body, Header) ->
     Props = lists:map(fun({Key, _, Value}) -> {Key, Value} end, Header),
     To = proplists:get_value('wsa:To', Props),
-    Action = proplists:get_value('wsa:Action', Props),
+    [Action] = proplists:get_value('wsa:Action', Props),
     ResourceURI = proplists:get_value('wsa:ResourceURI', Props),
     [MessageID] = proplists:get_value('wsa:MessageID', Props),
     [{'wsa:Address', [], [ReplyTo]}] = 
@@ -101,7 +102,7 @@ exec(_Body, Header) ->
                   end, 
                   Selectors)
         end,
-    exec(Action, To, ResourceURI, MessageID, ReplyTo, SelectorSet).
+    exec(list_to_atom(Action), To, ResourceURI, MessageID, ReplyTo, SelectorSet).
      
 exec({'s:Envelope', [], [{'s:Header', [], Header}, {'s:Body', [], Body}]}) ->
      exec(Body, Header);
