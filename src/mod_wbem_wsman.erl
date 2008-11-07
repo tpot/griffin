@@ -54,7 +54,20 @@ soap_fault_detail(Detail) ->
              [Detail]
      end}.
 
+uuid() ->
+    ["urn:uuid:"] ++ uuid:to_string(uuid:v4()).
+
 %% Execute request
+
+exec(?ActionGet, To, ResourceURI, MessageID, ReplyTo, SelectorSet) ->
+    {'s:Envelope',
+     [{'xmlns:s', ?s}, {'xmlns:wsa', ?wsa}],
+     [{'s:Header', 
+       [],
+       [{'wsa:To', [], [ReplyTo]},
+        {'wsa:RelatesTo', [], [MessageID]},
+        {'wsa:MessageID', [], [uuid()]},
+        {'wsa:Action', [], [atom_to_list(?ActionFault)]}]}]};
 
 exec(Action, To, ResourceURI, MessageID, ReplyTo, SelectorSet) ->
     {'s:Envelope',
@@ -63,6 +76,7 @@ exec(Action, To, ResourceURI, MessageID, ReplyTo, SelectorSet) ->
        [],
        [{'wsa:To', [], [ReplyTo]},
         {'wsa:RelatesTo', [], [MessageID]},
+        {'wsa:MessageID', [], [uuid()]},
         {'wsa:Action', [], [atom_to_list(?ActionFault)]}]},
       soap_fault_body('s:Sender', 'wsa:ActionNotSupported', 
                       "Action not supported", Action)]}.
