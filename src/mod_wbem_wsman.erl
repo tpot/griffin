@@ -4,6 +4,7 @@
 
 -include_lib("inets/src/httpd.hrl").
 -include_lib("xmerl/include/xmerl.hrl").
+-include_lib("wsman.hrl").
 
 %% Execute request
 
@@ -34,7 +35,7 @@ exec(Body, Header) ->
      
 exec({'s:Envelope', [], [{'s:Header', [], Header}, {'s:Body', [], Body}]}) ->
     {'s:Envelope',
-     [{'xmlns:s', "http://www.w3.org/2003/05/soap-envelope"}],     
+     [{'xmlns:s', ?s}],     
      exec(Body, Header)};
 
 exec(TT) ->
@@ -47,7 +48,7 @@ exec(TT) ->
 
 soap_fault(Code, Subcode, Reason, Detail) ->
     {'s:Envelope', 
-     [{'xmlns:s', "http://www.w3.org/2003/05/soap-envelope"}],
+     [{'xmlns:s', ?s}],
      [{'s:Body', 
        [],
        [{'s:Fault', 

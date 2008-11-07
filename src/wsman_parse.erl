@@ -6,10 +6,7 @@
          'Selector'/3, 'Body'/3]).
 
 -include_lib("xmerl/include/xmerl.hrl").
-
--define(s, 'http://www.w3.org/2003/05/soap-envelope').
--define(wsman, 'http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd').
--define(wsa, 'http://schemas.xmlsoap.org/ws/2004/08/addressing').
+-include_lib("wsman.hrl").
 
 %% SOAP envelope
 
