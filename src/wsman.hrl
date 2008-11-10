@@ -52,3 +52,10 @@
         'http://schemas.xmlsoap.org/ws/2004/08/eventing/SubscribeResponse').
 
 -define(ActionFault, 'http://schemas.xmlsoap.org/ws/2004/08/addressing/fault').
+
+%% Miscellanea
+
+-define(NameSpaceSelector, "__cimnamespace").
+-define(DefaultNameSpace, "root/cimv2").
+
+-define(ClassNameSpace, 'http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2').
