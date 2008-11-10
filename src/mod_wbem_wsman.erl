@@ -1,10 +1,16 @@
 -module(mod_wbem_wsman).
 
+%% Useful functions from the Pegasus WsmServer code:
+%%
+%% CimToWsmResponseMapper::mapCimExceptionToWsmFault()
+
 -export([do/1, do/2]).
 
 -include_lib("inets/src/httpd.hrl").
 -include_lib("xmerl/include/xmerl.hrl").
+
 -include_lib("wsman.hrl").
+-include_lib("cim.hrl").
 
 %% TODO: Fix hardcoded xml namespace names
 
@@ -66,21 +72,81 @@ response_headers(MessageID, ReplyTo, Action) ->
      {'wsa:MessageID', [], [uuid()]},
      {'wsa:Action', [], [atom_to_list(Action)]}].
 
+%% Misc utilities
+
+namespace_from_selectors(SelectorSet) ->
+    case proplists:get_value(?NameSpaceSelector, SelectorSet) of
+        undefined ->
+            ?DefaultNameSpace;
+        NS ->
+            NS
+    end.
+
+classname_from_uri(ResourceURI) ->
+    CN = string:concat(atom_to_list(?ClassNameSpace), "/"),
+    case string:str(ResourceURI, CN) of
+        1 ->
+            string:substr(ResourceURI, string:len(CN) + 1);
+        _ ->
+            undefined
+    end.
+
+%% Convert selectors
+
+keybindings_from_selectors(SelectorSet) ->
+    S = proplists:delete(?NameSpaceSelector, SelectorSet),
+    %% TODO: handle non-string keybindings
+    SelectorSet.
+
+soap_fault_from_error(Error, Detail) ->
+    case Error of
+        ?CIM_ERR_NOT_FOUND ->
+            [{'s:Fault', 
+              [], 
+              [soap_fault_code('s:Sender', 'wsa:DestinationUnreachable'),
+               soap_fault_reason("No route can be determined to the resource"),
+               soap_fault_detail(Detail)]}];
+        ?CIM_ERR_NOT_SUPPORTED ->
+            [{'s:Fault', 
+              [], 
+              [soap_fault_code('s:Sender', 'wsa:ActionNotSupported'),
+               soap_fault_reason("Action not supported"),
+               soap_fault_detail(Detail)]}]
+    end.
+
+%% Convert an erlang term to a tupletree
+
+from_term(Term) ->
+    throw({error, io_lib:format("unconverted term: ~w", [Term])}).
+
 %% Execute request
 
 exec(?ActionGet, To, ResourceURI, MessageID, ReplyTo, SelectorSet) ->
+    NameSpace = namespace_from_selectors(SelectorSet),
+    ClassName = classname_from_uri(ResourceURI),
+    KB = keybindings_from_selectors(SelectorSet),
+    InstanceName = #instancename{classname = ClassName, keybindings = KB},
+    Result = gen_server:call(
+               cimomhandle,
+               {getInstance, NameSpace, InstanceName, false, false, false, []}),
+    {Header, Body} = 
+        case Result of
+            {ok, Instance} ->
+                {response_headers(MessageID, ReplyTo, ?ActionGetResponse),
+                 from_term(Instance)};
+            {error, {Error, Detail}} ->
+                {response_headers(MessageID, ReplyTo, ?ActionFault),
+                 soap_fault_from_error(Error, Detail)}
+        end,
     {'s:Envelope',
      [{'xmlns:s', ?s}, {'xmlns:wsa', ?wsa}],
-     [{'s:Header', 
-       [],
-       response_headers(MessageID, ReplyTo, ?ActionGetResponse)}]};
+     [{'s:Header', [], Header},
+      {'s:Body', [], Body}]};
 
 exec(Action, To, ResourceURI, MessageID, ReplyTo, SelectorSet) ->
     {'s:Envelope',
      [{'xmlns:s', ?s}, {'xmlns:wsa', ?wsa}],
-     [{'s:Header', 
-       [],
-       response_headers(MessageID, ReplyTo, ?ActionFault)},
+     [{'s:Header', [], response_headers(MessageID, ReplyTo, ?ActionFault)},
       soap_fault_body('s:Sender', 'wsa:ActionNotSupported', 
                       "Action not supported", [atom_to_list(Action)])]}.
 
