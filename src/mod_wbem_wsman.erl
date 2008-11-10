@@ -88,7 +88,7 @@ exec(_Body, Header) ->
     Props = lists:map(fun({Key, _, Value}) -> {Key, Value} end, Header),
     To = proplists:get_value('wsa:To', Props),
     [Action] = proplists:get_value('wsa:Action', Props),
-    ResourceURI = proplists:get_value('wsa:ResourceURI', Props),
+    [ResourceURI] = proplists:get_value('wsman:ResourceURI', Props),
     [MessageID] = proplists:get_value('wsa:MessageID', Props),
     [{'wsa:Address', [], [ReplyTo]}] = 
         proplists:get_value('wsa:ReplyTo', Props),
