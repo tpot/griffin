@@ -69,7 +69,7 @@ is_assoc_class(Repository, NameSpace, ClassName) ->
                Repository, NameSpace, ClassName, false, true, false, undefined),
     case Result of 
         {error, _} ->
-            {error, {?CIM_ERR_INVALID_PARAMETER}};
+            {error, {?CIM_ERR_INVALID_PARAMETER, undefined}};
         {ok, ClassDef} ->
             ClassQuals = ClassDef#class.qualifiers,
             LowerQuals = lists:map(
@@ -110,7 +110,7 @@ reference_props(Repository, NameSpace, ClassName) ->
                Repository, NameSpace, ClassName, false, true, false, undefined),
     case Result of 
         {error, _} ->
-            {error, {?CIM_ERR_INVALID_PARAMETER}};
+            {error, {?CIM_ERR_INVALID_PARAMETER, undefined}};
         {ok, ClassDef} ->
             Props = ClassDef#class.properties,
             lists:map(
@@ -217,7 +217,7 @@ handle_call({getInstance, NameSpace, InstanceName, LocalOnly, IncludeQualifiers,
     {reply,
      case module_for_class(ProvidersForClass, NameSpace, ClassName) of
          undefined ->
-             {error, {?CIM_ERR_NOT_FOUND}};
+             {error, {?CIM_ERR_NOT_FOUND, undefined}};
          ProviderModule ->
              gen_server:call(
                ProviderModule,
@@ -256,7 +256,7 @@ handle_call({enumerateInstanceNames, NameSpace, ClassName}, _From, State) ->
 
 handle_call({getProperty, _NameSpace, _InstanceName, _PropertyName},
             _From, State) ->
-    {reply, {error, {?CIM_ERR_NOT_SUPPORTED}}, State};
+    {reply, {error, {?CIM_ERR_NOT_SUPPORTED, undefined}}, State};
 
 %% Pulled Read
 
@@ -283,7 +283,7 @@ handle_call({getProperty, _NameSpace, _InstanceName, _PropertyName},
 
 handle_call({setProperty, _NameSpace, _InstanceName, _PropertyName, _NewValue},
             _From, State) ->
-    {reply, {error, {?CIM_ERR_NOT_SUPPORTED}}, State};
+    {reply, {error, {?CIM_ERR_NOT_SUPPORTED, undefined}}, State};
 
 %% Schema Manipulation
 
@@ -312,7 +312,7 @@ handle_call({createInstance, NameSpace, NewInstance}, _From, State) ->
     {reply,
      case module_for_class(ProvidersForClass, NameSpace, ClassName) of
          undefined ->
-             {error, {?CIM_ERR_NOT_SUPPORTED}};
+             {error, {?CIM_ERR_NOT_SUPPORTED, undefined}};
          ProviderModule ->
              providermanager:call(
                ProviderModule, {createInstance, NameSpace, NewInstance})
@@ -326,7 +326,7 @@ handle_call({modifyInstance, NameSpace, ModifiedInstance, IncludeQualifiers,
     {reply,
      case module_for_class(ProvidersForClass, NameSpace, ClassName) of
          undefined ->
-             {error, {?CIM_ERR_NOT_SUPPORTED}};
+             {error, {?CIM_ERR_NOT_SUPPORTED, undefined}};
          ProviderModule ->
              providermanager:call(
                ProviderModule, {modifyInstance, NameSpace, ModifiedInstance,
@@ -340,7 +340,7 @@ handle_call({deleteInstance, NameSpace, InstanceName}, _From, State) ->
     {reply, 
      case module_for_class(ProvidersForClass, NameSpace, ClassName) of
          undefined ->
-             {error, {?CIM_ERR_NOT_SUPPORTED}};
+             {error, {?CIM_ERR_NOT_SUPPORTED, undefined}};
          ProviderModule ->
              providermanager:call(
                ProviderModule, {deleteInstance, NameSpace, InstanceName})
@@ -352,7 +352,7 @@ handle_call({deleteInstance, NameSpace, InstanceName}, _From, State) ->
 handle_call({associators, _NameSpace, _ObjectName, _AssocClass, _ResultClass, 
              _Role, _ResultRole, _IncludeQualifiers, _IncludeClassOrigin, 
              _PropertyList}, _From, State) ->
-    {reply, {error, {?CIM_ERR_NOT_SUPPORTED}}, State};
+    {reply, {error, {?CIM_ERR_NOT_SUPPORTED, undefined}}, State};
     
 handle_call({associatorNames, NameSpace, ObjectName, _AssocClass, 
              _ResultClass, _Role, _ResultRole}, _From, State) ->
@@ -372,21 +372,21 @@ handle_call({associatorNames, NameSpace, ObjectName, _AssocClass,
           end,
           assoc_providers(Repository, ProvidersForClass, NameSpace)),
     error_logger:info_msg("providers = ~p~n", [Providers]),
-    {reply, {error, {?CIM_ERR_NOT_SUPPORTED}}, State};
+    {reply, {error, {?CIM_ERR_NOT_SUPPORTED, undefined}}, State};
 
 handle_call({references, _NameSpace, _ObjectName, _ResultClass, _Role, 
              _IncludeQualifiers, _IncludeClassOrigin, _PropertyList}, 
             _From, State) ->
-    {reply, {error, {?CIM_ERR_NOT_SUPPORTED}}, State};
+    {reply, {error, {?CIM_ERR_NOT_SUPPORTED, undefined}}, State};
 
 handle_call({referenceNames, _NameSpace, _ObjectName, _ResultClass, _Role},
             _From, State) ->
-    {reply, {error, {?CIM_ERR_NOT_SUPPORTED}}, State};
+    {reply, {error, {?CIM_ERR_NOT_SUPPORTED, undefined}}, State};
 
 %% Query Execution
 
 handle_call({execQuery, _QueryLanguage, _Query}, _From, State) ->
-    {reply, {error, {?CIM_ERR_NOT_SUPPORTED}}, State};
+    {reply, {error, {?CIM_ERR_NOT_SUPPORTED, undefined}}, State};
 
 %% Qualifier Declaration
 
