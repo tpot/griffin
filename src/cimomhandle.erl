@@ -219,9 +219,9 @@ handle_call({getInstance, NameSpace, InstanceName, LocalOnly, IncludeQualifiers,
          undefined ->
              {error, {?CIM_ERR_NOT_FOUND, undefined}};
          ProviderModule ->
-             gen_server:call(
+             providermanager:call(
                ProviderModule,
-               {getInstance, NameSpace, ClassName, LocalOnly,
+               {getInstance, NameSpace, InstanceName, LocalOnly,
                 IncludeQualifiers, IncludeClassOrigin, PropertyList})
      end,
      State};
