@@ -313,11 +313,11 @@ from_term(Term) when is_record(Term, property) ->
             undefined -> [];
             _ -> [{?PROPAGATED, Term#property.propagated}]
         end,
-    Child = case Term#property.value of
-                undefined -> [];
-                _ -> to_term(Term#property.value)
-            end,
-    {'PROPERTY', Attrs, Child};
+    Children = case Term#property.value of
+                   undefined -> [];
+                   _ -> [{'VALUE', [], [Term#property.value]}]
+               end,
+    {'PROPERTY', Attrs, Children};
 
 from_term(Term) when is_record(Term, property_reference) ->
     Attrs = [{?NAME, Term#property_reference.name}] ++
