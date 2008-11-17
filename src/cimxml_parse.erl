@@ -93,7 +93,7 @@ parse(Elt) ->
 %% Fetch and validate a VALUETYPE attribute
 
 get_valuetype_attr(Elt) ->
-    Attr = xml:get_attr(?VALUETYPE, Elt, "string"}),
+    Attr = xml:get_attr(?VALUETYPE, Elt, "string"),
     case Attr#xmlAttribute.value of
         "string" -> Attr;
         "boolean" -> Attr;
