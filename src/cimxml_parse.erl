@@ -93,7 +93,7 @@ parse(Elt) ->
 %% Fetch and validate a VALUETYPE attribute
 
 get_valuetype_attr(Elt) ->
-    Attr = xml:get_attr(?VALUETYPE, Elt, #xmlAttribute{value = "string"}),
+    Attr = xml:get_attr(?VALUETYPE, Elt, "string"}),
     case Attr#xmlAttribute.value of
         "string" -> Attr;
         "boolean" -> Attr;
@@ -108,7 +108,7 @@ get_valuetype_attr(Elt) ->
 %% Fetch and validate a TYPE attribute 
 
 get_type_attr(Elt) ->
-    Attr = xml:get_attr(?TYPE, Elt, #xmlAttribute{value = undefined}),
+    Attr = xml:get_attr(?TYPE, Elt, "string"),
     case Attr#xmlAttribute.value of
         "boolean" -> Attr;
         "string" -> Attr;
@@ -124,7 +124,6 @@ get_type_attr(Elt) ->
         "datetime" -> Attr;
         "real32" -> Attr;
         "real64" -> Attr;
-        undefined -> Attr;
         _ ->
             throw({error, 
                    {invalid_attribute_error, 
