@@ -448,6 +448,13 @@ from_term(Term) when is_record(Term, keyvalue) ->
     Attrs = [{?VALUETYPE, Term#keyvalue.valuetype}],
     {'KEYVALUE', Attrs, [Term#keyvalue.value]};
 
+from_term(Term) when is_record(Term, instance) ->
+    error_logger:info_msg("from_term ~p~n", [Term]),
+    {'INSTANCE', 
+     [{'CLASSNAME', Term#instance.classname}], 
+     [from_term(Qual) || Qual <- Term#instance.qualifiers] ++
+     [from_term(Prop) || Prop <- Term#instance.properties]};
+
 from_term({ok, List}) when is_list(List) ->
     {'IRETURNVALUE', [], [from_term(Elt) || Elt <- List]};
 
