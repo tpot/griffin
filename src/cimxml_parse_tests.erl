@@ -1,4 +1,4 @@
--module(cimxml_parse_test).
+-module(cimxml_parse_tests).
 -include_lib("eunit/include/eunit.hrl").
 
 %% Test invalid CIM-XML request

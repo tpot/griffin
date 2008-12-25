@@ -1,4 +1,4 @@
--module(mod_wbem_cimxml_test).
+-module(mod_wbem_cimxml_tests).
 -include_lib("eunit/include/eunit.hrl").
 
 %% Test empty request body

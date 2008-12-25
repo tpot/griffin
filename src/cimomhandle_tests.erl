@@ -1,4 +1,4 @@
--module(cimomhandle_test).
+-module(cimomhandle_tests).
 
 -include_lib("eunit/include/eunit.hrl").
 

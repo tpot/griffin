@@ -25,7 +25,7 @@ shell: all
 	$(ERL_CMD) -s griffin start
 
 test: all
-	$(ERL_CMD) -noshell -s griffin_test test -s erlang halt
+	$(ERL_CMD) -noshell -s griffin_tests test -s erlang halt
 
 dist: all
 	mkdir -p $(DIST_DIR)
