@@ -152,18 +152,48 @@ internal_get_subclasses(Table, NameSpace, ClassName, DeepInheritance) ->
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% Initialise a repository instance.  Options allow persistent vs
+%% non-persistent storage of repository data, and reading/writing to a
+%% file.
+
 init(Options) ->
     Filename = proplists:get_value(file, Options),
-    State = case Filename of
-        undefined ->
+    %% Persistence defaults to true when a filename is specified, but is
+    %% false otherwise
+    Persistent = proplists:get_value(
+                   persistent, Options,
+                   case Filename of
+                       undefined ->
+                           false;
+                       _ ->
+                           true
+                   end),
+    case {Filename, Persistent} of
+        %% No filename and persistent is an error
+        {undefined, true} ->
+            {stop, "No filename specified for persistent repository"};
+        %% No filename and non-persistent is an ets table
+        {undefined, false} ->
             Table = ets:new(?MODULE, [set]),
             {ok, #state{storage = ets, table = Table}};
-        _ -> 
-            {ok, Table} = dets:open_file(
-                            ?MODULE, [{type, set}, {file, Filename}]),
-            {ok, #state{storage = dets, table = Table}}
-    end,
-    State.
+        %% Filename and non-persistent calls ets:from_dets()
+        {_, false} ->
+            EtsTable = ets:new(?MODULE, [set]),
+            {ok, DetsTable} = 
+                dets:open_file(
+                  ?MODULE, [{type, set}, {file, Filename}]),
+            ets:from_dets(EtsTable, DetsTable),
+            dets:close(?MODULE),
+            {ok, #state{storage = ets, table = EtsTable}};
+        %% Filename and persistent is a dets table
+        {_, true} -> 
+            case dets:open_file(?MODULE, [{type, set}, {file, Filename}]) of
+                {ok, Table} ->
+                    {ok, #state{storage = dets, table = Table}};
+                {error, Reason} ->
+                    {stop, Reason}
+            end
+    end.
 
 handle_call(stop, _From, State) ->
     %% Table close handled in terminate callback
