@@ -166,6 +166,7 @@ init(Options) ->
     State.
 
 handle_call(stop, _From, State) ->
+    %% Table close handled in terminate callback
     {stop, normal, stopped, State};
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
