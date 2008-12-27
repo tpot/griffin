@@ -13,8 +13,9 @@ no_filename_persistent_test() ->
 create_multiple_repositories_test_() ->
     {foreach,
      fun() -> 
-             {ok, Pid1} = repository:start_link([]),
-             {ok, Pid2} = repository:start_link([]),
+             Options = [],
+             {ok, Pid1} = repository:start_link(Options),
+             {ok, Pid2} = repository:start_link(Options),
              {Pid1, Pid2}
      end,
      fun({Pid1, Pid2}) ->
@@ -26,47 +27,87 @@ create_multiple_repositories_test_() ->
 
 %% Test persistence settings
 
-nonpersistence_nofile_test() ->
-    Options = [],
-    {ok, Pid1} = repository:start_link(Options),
-    NameSpace = "test",
-    ClassName = "CIM_Foo",
-    ok = gen_server:call(
-           Pid1, {createClass, NameSpace, #class{name = ClassName}}),
-    repository:stop(Pid1),
-    {ok, Pid2} = repository:start_link(Options),
-    {error, _} = 
-        gen_server:call(
-          Pid2, {getClass, NameSpace, ClassName, true, true, true, []}).
-   
-nonpersistence_file_test() ->
-    Filename = "nonpersistence_file_test.dets",
-    Options = [{file, Filename}, {persistent, false}],
-    {ok, Pid1} = repository:start_link(Options),
-    NameSpace = "test",
-    ClassName = "CIM_Foo",
-    ok = gen_server:call(
-           Pid1, {createClass, NameSpace, #class{name = ClassName}}),
-    repository:stop(Pid1),
-    {ok, Pid2} = repository:start_link(Options),
-    {error, _} = 
-        gen_server:call(
-          Pid2, {getClass, NameSpace, ClassName, true, true, true, []}),
-    file:delete(Filename).
+nonpersistence_nofile_test_() ->
+    {foreach,
+     fun() -> 
+             Options = [],
+             {ok, Pid1} = repository:start_link(Options),
+             {ok, Pid2} = repository:start_link(Options),
+             {Pid1, Pid2}
+     end,
+     fun({Pid1, Pid2}) ->
+             repository:stop(Pid1),
+             repository:stop(Pid2)
+     end,
+     [fun({Pid1, Pid2}) ->
+              NameSpace = "test",
+              ClassName = "CIM_Foo",
+              [?_assertEqual(
+                  ok, 
+                  gen_server:call(
+                    Pid1, 
+                    {createClass, NameSpace, #class{name = ClassName}})),
+               ?_assertMatch(
+                  {error, _},
+                  gen_server:call(
+                    Pid2, 
+                    {getClass, NameSpace, ClassName, true, true, true, []}))]
+      end]}.
+
+nonpersistence_file_test_() ->
+    {foreach,
+     fun() ->
+             Filename = "nonpersistence_file_test.dets",
+             Options = [{file, Filename}, {persistent, false}],
+             {ok, Pid1} = repository:start_link(Options),
+             {ok, Pid2} = repository:start_link(Options),
+             {Filename, Pid1, Pid2}
+     end,
+     fun({Filename, Pid1, Pid2}) ->
+             repository:stop(Pid1),
+             repository:stop(Pid2),
+             file:delete(Filename)
+     end,
+     [fun({_Filename, Pid1, Pid2}) ->
+              NameSpace = "test",
+              ClassName = "CIM_Foo",
+              [?_assertEqual(
+                  ok,
+                  gen_server:call(
+                    Pid1, {createClass, NameSpace, #class{name = ClassName}})),
+               ?_assertMatch(
+                  {error, _},
+                  gen_server:call(
+                    Pid2, 
+                    {getClass, NameSpace, ClassName, true, true, true, []}))]
+      end]}.
     
-persistence_file_test() ->
-    Filename = "persistence_file_test.dets",
-    Options = [{file, Filename}],
-    {ok, Pid1} = repository:start_link(Options),
-    NameSpace = "test",
-    ClassName = "CIM_Foo",
-    Class = #class{name = ClassName},
-    ok = gen_server:call(
-           Pid1, {createClass, NameSpace, #class{name = ClassName}}),
-    repository:stop(Pid1),
-    {ok, Pid2} = repository:start_link(Options),
-    {ok, Class} = gen_server:call(
-                    Pid2, {getClass, NameSpace, ClassName, true, true, 
-                           true, []}),
-    file:delete(Filename).
-    
+persistence_file_test_() ->
+    {foreach,
+     fun() ->
+             Filename = "persistence_file_test.dets",
+             Options = [{file, Filename}],
+             {ok, Pid1} = repository:start_link(Options),
+             {ok, Pid2} = repository:start_link(Options),
+             {Filename, Pid1, Pid2}
+     end,
+     fun({Filename, Pid1, Pid2}) ->
+             repository:stop(Pid1),
+             repository:stop(Pid2),
+             file:delete(Filename)
+     end,
+     [fun({_Filename, Pid1, Pid2}) ->
+              NameSpace = "test",
+              ClassName = "CIM_Foo",
+              Class = #class{name = ClassName},
+              [?_assertEqual(
+                  ok,
+                  gen_server:call(
+                    Pid1, 
+                    {createClass, NameSpace, #class{name = ClassName}})),
+               ?_assertMatch(
+                  {ok, Class},
+                  gen_server:call(
+                    Pid2, 
+                    {getClass, NameSpace, ClassName, true, true, true, []}))]
+      end]}.
