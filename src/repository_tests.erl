@@ -10,12 +10,19 @@ no_filename_persistent_test() ->
 
 %% Test creating multiple repository processes
 
-create_multiple_repositories_test() ->
-    {ok, Pid1} = repository:start_link([]),
-    {ok, Pid2} = repository:start_link([]),
-    ?assert(Pid1 /= Pid2),
-    repository:stop(Pid1),
-    repository:stop(Pid2).
+create_multiple_repositories_test_() ->
+    {foreach,
+     fun() -> 
+             {ok, Pid1} = repository:start_link([]),
+             {ok, Pid2} = repository:start_link([]),
+             {Pid1, Pid2}
+     end,
+     fun({Pid1, Pid2}) ->
+             repository:stop(Pid1),
+             repository:stop(Pid2)
+     end,
+     [fun({Pid1, Pid2}) -> ?_assert(Pid1 /= Pid2) end]
+    }.
 
 %% Test persistence settings
 
