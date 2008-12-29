@@ -292,8 +292,8 @@ handle_call({enumerateClasses, NameSpace, ClassName, DeepInheritance,
 
 handle_call({enumerateClassNames, NameSpace, ClassName, DeepInheritance},
             _From, State) ->
-    error_logger:info_msg("enumerateClassNames ~s:~s~n", 
-                          [NameSpace, ClassName]),
+    error_logger:info_msg("enumerateClassNames ~s:~s:~p~n", 
+                          [NameSpace, ClassName, DeepInheritance]),
     ClassNames = 
         internal_get_subclasses(State, NameSpace, ClassName, DeepInheritance),
     {reply, 
