@@ -1,7 +1,13 @@
 -module(repository).
 -behaviour(gen_server).
 
--export([start_link/1, get_subclasses/4, isa/4, get_class/7, stop/1]).
+%% client interface
+
+-export([start_link/1, get_subclasses/4, isa/4, get_class/7, stop/1,
+         enumerate_class_names/2, enumerate_class_names/3, 
+         enumerate_class_names/4]).
+
+%% gen_server callbacks
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, 
          terminate/2, code_change/3]).
@@ -29,6 +35,23 @@ get_class(Repository, NameSpace, ClassName, LocalOnly, IncludeQualifiers,
     gen_server:call(
       Repository, {getClass, NameSpace, ClassName, LocalOnly, 
                    IncludeQualifiers, IncludeClassOrigin, PropertyList}).
+
+enumerate_class_names(Repository, NameSpace) ->
+    enumerate_class_names(Repository, NameSpace, undefined).
+
+enumerate_class_names(Repository, NameSpace, ClassName) ->
+    enumerate_class_names(Repository, NameSpace, ClassName, false).
+
+enumerate_class_names(Repository, NameSpace, ClassName, DeepInheritance) ->
+    Result = gen_server:call(
+               Repository, 
+               {enumerateClassNames, NameSpace, ClassName, DeepInheritance}),
+    case Result of
+        {ok, ClassNames} ->
+            lists:map(fun(Elt) -> Elt#classname.name end, ClassNames);
+        _ ->
+            Result
+    end.
 
 isa(Repository, NameSpace, ClassName, BaseClass) ->
     {ok, Result} = gen_server:call(

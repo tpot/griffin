@@ -111,3 +111,99 @@ persistence_file_test_() ->
                     Pid2, 
                     {getClass, NameSpace, ClassName, true, true, true, []}))]
       end]}.
+
+%% Test EnumerateClassNames operation
+
+enumerate_class_names_test_() ->
+    NS = "test",
+    ClassNameFoo = "CIM_Foo",
+    ClassNameBar = "CIM_Bar",
+    ClassNameBaz = "CIM_Baz",
+    ClassFoo = #class{name = ClassNameFoo},
+    ClassBar = #class{name = ClassNameBar, superclass = ClassNameFoo},
+    ClassBaz = #class{name = ClassNameBaz, superclass = ClassNameBar},
+    {foreach,
+     fun() ->
+             Options = [],
+             {ok, Pid} = repository:start_link(Options),
+             ok = repository:create_class(Pid, NS, ClassFoo),
+             ok = repository:create_class(Pid, NS, ClassBar),
+             ok = repository:create_class(Pid, NS, ClassBaz),
+             Pid
+     end,
+     fun(Pid) ->
+             repository:stop(Pid)
+     end,
+     [fun(Pid) -> 
+
+              %% Test 2-ary function (ClassName = null, DeepInheritance = false)
+
+              [{"enumerate_class_names/2",
+                ?_assertEqual(
+                   [ClassNameFoo],
+                   repository:enumerate_class_names(Pid, NS))},
+
+               %% Test 3-ary function (DeepInheritance = false)
+
+               {"enumerate_class_names/3 - foo",
+                ?_assertEqual(
+                   [ClassNameBar],
+                   repository:enumerate_class_names(Pid, NS, ClassNameFoo))},
+
+               {"enumerate_class_names/3 - bar",
+                ?_assertEqual(
+                   [ClassNameBaz],
+                   repository:enumerate_class_names(Pid, NS, ClassNameBar))},
+
+               %% Test 4-ary function (all combos of ClassName = null/non-null
+               %% and DeepInheritance = true/false)
+
+               {"enumerate_class_names/4 - undefined, true",
+                ?_assertEqual(
+                   lists:sort([ClassNameFoo, ClassNameBar, ClassNameBaz]),
+                   lists:sort(
+                     repository:enumerate_class_names(
+                       Pid, NS, undefined, true)))},
+
+               {"enumerate_class_names/4 - undefined, false",
+                ?_assertEqual(
+                   [ClassNameFoo], 
+                   repository:enumerate_class_names(
+                     Pid, NS, undefined, false))},
+
+               {"enumerate_class_names/4 - foo, true",
+                ?_assertEqual(
+                   [ClassNameBar, ClassNameBaz],
+                   repository:enumerate_class_names(
+                     Pid, NS, ClassNameFoo, true))},
+
+               {"enumerate_class_names/4 - foo, false",
+                ?_assertEqual(
+                   [ClassNameBar],
+                   repository:enumerate_class_names(
+                     Pid, NS, ClassNameFoo, false))},
+
+               {"enumerate_class_names/4 - bar, true",
+                ?_assertEqual(
+                   [ClassNameBaz],
+                   repository:enumerate_class_names(
+                     Pid, NS, ClassNameBar, true))},
+
+               {"enumerate_class_names/4 - bar, false",
+                ?_assertEqual(
+                   [ClassNameBaz],
+                   repository:enumerate_class_names(
+                     Pid, NS, ClassNameBar, false))},
+
+               {"enumerate_class_names/4 - baz, true",
+                ?_assertEqual(
+                   [],
+                   repository:enumerate_class_names(
+                     Pid, NS, ClassNameBaz, true))},
+
+               {"enumerate_class_names/4 - baz, false",
+                ?_assertEqual(
+                   [],
+                   repository:enumerate_class_names(
+                     Pid, NS, ClassNameBaz, true))}]
+      end]}.
