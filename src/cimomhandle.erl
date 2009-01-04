@@ -3,8 +3,7 @@
 
 -include_lib("cim.hrl").
 
--export([start_link/0, start_link/1, register_provider/3, 
-         unregister_provider/2, stop/1]).
+-export([start_link/1, register_provider/3, unregister_provider/2, stop/1]).
 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, 
          terminate/2, code_change/3]).
@@ -16,19 +15,24 @@
 
 -define(SERVER, ?MODULE).
 
-%% Start server with repository from process dictionary
+%% Start server
 
-start_link() ->
-    Repository = whereis(repository),
-    gen_server:start_link({local, ?SERVER}, ?MODULE, Repository, []).
+start_link(Options) ->
+    Register = proplists:get_value(register, Options, false),
+    case Register of
+        false ->
+            gen_server:start_link(?MODULE, Options, []);
+        _ ->
+            gen_server:start_link({local, ?SERVER}, ?MODULE, Options, [])
+    end.
 
-%% Start server with specified repository
+init(Options) when is_list(Options) ->
+    RepositoryOptions = proplists:get_value(repository, Options),
+    {ok, Pid} = repository:start_link(RepositoryOptions),
+    init(Pid);
 
-start_link(Repository) ->
-    gen_server:start_link(?MODULE, Repository, []).
-
-init(Repository) ->
-    {ok, #state{repository = Repository}}.
+init(Pid) when is_pid(Pid) ->
+    {ok, #state{repository = Pid}}.
 
 stop(Pid) ->
     gen_server:call(Pid, stop).

@@ -12,16 +12,15 @@ start_link() ->
 
 init([]) ->
 
-    Repository = {repository, 
-                  {repository, start_link, [[{file, 'repository.dets'}]]},
-                  permanent, 2000, worker, [repository]},
+    CIMOMHandleOptions = [{register, true},
+                          {repository, [{file, 'repository.dets'}]}],
 
     CIMOMHandle = {cimomhandle,
-                   {cimomhandle, start_link, []},
+                   {cimomhandle, start_link, [CIMOMHandleOptions]},
                    permanent, 2000, worker, [cimomhandle]},
 
     HTTPServer = {http_server, 
                   {http_server, start_link, []},
                   permanent, 2000, worker, [http_server]},
 
-    {ok, {{one_for_one, 5, 10}, [Repository, CIMOMHandle, HTTPServer]}}.
+    {ok, {{one_for_one, 5, 10}, [CIMOMHandle, HTTPServer]}}.
