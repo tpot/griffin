@@ -800,12 +800,12 @@ cimxml_request(Doc) ->
               io_lib:format("~s: ~s", [atom_to_list(ErrorType), Description]));
         {'EXIT', Reason} ->
             %% CIM-XML validator crashed - oops
-            cimxml_request_not_valid(io_lib:format("~w", [Reason]));
+            cimxml_request_not_valid(io_lib:format("~p", [Reason]));
         RequestTT ->
             case (catch exec(RequestTT)) of
                 %% Exception
                 {'EXIT', Reason} ->
-                    cimxml_request_not_valid(io_lib:format("~s", [Reason]));
+                    cimxml_request_not_valid(io_lib:format("~p", [Reason]));
                 %% Normal result
                 ResponseTT -> 
                     cimxml_request_good(ResponseTT)
