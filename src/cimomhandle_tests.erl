@@ -12,7 +12,8 @@ make_testspec(Setup, Test) ->
      fun() -> 
              %% Start repository and cimomhandle 
              {ok, Repository} = repository:start_link([]),
-             {ok, CIMOMHandle} = cimomhandle:start_link(Repository),
+             {ok, CIMOMHandle} = 
+                 cimomhandle:start_link([{repository_pid, Repository}]),
              %% Execute setup function
              Setup(CIMOMHandle),
              %% Return process IDs

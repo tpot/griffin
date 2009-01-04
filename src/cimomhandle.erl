@@ -26,12 +26,16 @@ start_link(Options) ->
             gen_server:start_link({local, ?SERVER}, ?MODULE, Options, [])
     end.
 
-init(Options) when is_list(Options) ->
-    RepositoryOptions = proplists:get_value(repository, Options),
-    {ok, Pid} = repository:start_link(RepositoryOptions),
-    init(Pid);
-
-init(Pid) when is_pid(Pid) ->
+init(Options) ->
+    Pid = case proplists:get_value(repository_pid, Options) of
+              undefined ->
+                  RepoOptions = proplists:get_value(
+                                  repository_options, Options, []),
+                  {ok, RepoPid} = repository:start_link(RepoOptions),
+                  RepoPid;
+              RepoPid ->
+                  RepoPid
+          end,
     {ok, #state{repository = Pid}}.
 
 stop(Pid) ->

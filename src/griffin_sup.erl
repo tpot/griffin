@@ -13,7 +13,7 @@ start_link() ->
 init([]) ->
 
     CIMOMHandleOptions = [{register, true},
-                          {repository, [{file, 'repository.dets'}]}],
+                          {repository_options, [{file, 'repository.dets'}]}],
 
     CIMOMHandle = {cimomhandle,
                    {cimomhandle, start_link, [CIMOMHandleOptions]},
