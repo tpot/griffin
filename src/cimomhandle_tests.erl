@@ -11,7 +11,7 @@ make_testspec(Setup, Test) ->
      %% Setup
      fun() -> 
              %% Start repository and cimomhandle 
-             {ok, Repository} = repository:start_link(),
+             {ok, Repository} = repository:start_link([]),
              {ok, CIMOMHandle} = cimomhandle:start_link(Repository),
              %% Execute setup function
              Setup(CIMOMHandle),
@@ -43,7 +43,7 @@ getclass_test_() ->
       fun(CIMOMHandle) ->
               {ok, Class} = gen_server:call(
                               CIMOMHandle, 
-                              {getClass, "root/cimv3", ClassName, 
+                              {getClass, "root/cimv2", ClassName, 
                                false, true, true, undefined}),
               ?_assertEqual(ClassDef, Class)
       end).
