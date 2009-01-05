@@ -177,6 +177,39 @@ internal_get_subclasses(Table, NameSpace, ClassName, DeepInheritance) ->
             end
     end.
 
+%% Filter CLASSORIGIN and PROPAGATED attributes from a class definition
+
+filter_newclass_attributes(Class) ->
+    Class#class{
+      properties = 
+          lists:map(
+            fun(Elt) ->
+                    case Elt of
+                        Prop when is_record(Elt, property) ->
+                            Prop#property
+                              {classorigin = undefined,
+                               propagated = undefined};
+                        PropArray when is_record(Elt, property_array) ->
+                            PropArray#property_array
+                              {classorigin = undefined,
+                               propagated = undefined};
+                        RefProp when is_record(Elt, property_reference) ->
+                            RefProp#property_reference
+                              {classorigin = undefined,
+                               propagated = undefined};
+                        Other ->
+                            Other
+                    end
+            end,
+            Class#class.properties),
+      methods = 
+          lists:map(
+            fun(Elt) ->
+                    Elt#method{classorigin = undefined,
+                               propagated = undefined}
+            end,
+            Class#class.methods)}.
+                    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Initialise a repository instance.  Options allow persistent vs
@@ -271,7 +304,8 @@ handle_call({createClass, NameSpace, NewClass}, _From, State) ->
     error_logger:info_msg("createClass ~s:~s~n", 
                           [NameSpace, NewClass#class.name]),
     Key = {class, NameSpace, string:to_lower(NewClass#class.name)},
-    case insert(State, {Key, NewClass}) of
+    Value = filter_newclass_attributes(NewClass),
+    case insert(State, {Key, Value}) of
         ok ->
             {reply, ok, State};
         {error, Reason} ->

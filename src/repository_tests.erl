@@ -207,3 +207,58 @@ enumerate_class_names_test_() ->
                    repository:enumerate_class_names(
                      Pid, NS, ClassNameBaz, true))}]
       end]}.
+
+%% Test CreateClass operation
+
+get_class(Pid, NameSpace, ClassName) ->
+    gen_server:call(
+      Pid, {getClass, NameSpace, ClassName, true, true, false, []}).
+
+create_class_test_() ->
+    NS = "test",
+    {foreach,
+     fun() ->
+             {ok, Pid} = repository:start_link([]),
+           Pid
+     end,
+     fun(Pid) ->
+             repository:stop(Pid)
+     end,
+     [fun(Pid) ->
+
+              %% Any CLASSORIGIN or PROPAGATED attributes in the new
+              %% class must be ignored by the server.
+              
+              ClassName = "Griffin_Test",
+              
+              {"Ignore CLASSORIGIN and PROPAGATED attributes in create_class",
+
+               ?_assertEqual(
+                  {ok, #class{
+                     name = ClassName,
+                     properties = [#property{name = "Prop"},
+                                   #property_array{name = "ArrayProp"},
+                                   #property_reference{name = "RefProp"}],
+                     methods = [#method{name = "Meth"}]}},
+                  begin
+                      Class = 
+                          #class{name = ClassName,
+                                 properties = [
+                                     #property{name = "Prop",
+                                               classorigin = "blah",
+                                               propagated = "True"},
+                                     #property_array{name = "ArrayProp",
+                                                     classorigin = "blah",
+                                                     propagated = "True"},
+                                     #property_reference{name = "RefProp",
+                                                         classorigin = "blah",
+                                                         propagated = "True"}],
+                                methods = [
+                                     #method{name = "Meth",
+                                             classorigin = "blah",
+                                             propagated = "True"}]},
+
+                      repository:create_class(Pid, NS, Class),
+                      get_class(Pid, NS, ClassName)
+                  end)}
+      end]}.
