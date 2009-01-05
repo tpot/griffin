@@ -112,11 +112,6 @@ persistence_file_test_() ->
                     {getClass, NameSpace, ClassName, true, true, true, []}))]
       end]}.
 
-%% Dummy create_class function
-
-create_class(Pid, NameSpace, NewClass) ->
-    gen_server:call(Pid, {createClass, NameSpace, NewClass}).
-
 %% Test EnumerateClassNames operation
 
 enumerate_class_names_test_() ->
@@ -131,9 +126,9 @@ enumerate_class_names_test_() ->
      fun() ->
              Options = [],
              {ok, Pid} = repository:start_link(Options),
-             ok = create_class(Pid, NS, ClassFoo),
-             ok = create_class(Pid, NS, ClassBar),
-             ok = create_class(Pid, NS, ClassBaz),
+             ok = repository:create_class(Pid, NS, ClassFoo),
+             ok = repository:create_class(Pid, NS, ClassBar),
+             ok = repository:create_class(Pid, NS, ClassBaz),
              Pid
      end,
      fun(Pid) ->

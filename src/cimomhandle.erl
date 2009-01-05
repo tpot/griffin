@@ -296,8 +296,8 @@ handle_call({setProperty, _NameSpace, _InstanceName, _PropertyName, _NewValue},
 %% Schema Manipulation
 
 handle_call({createClass, NameSpace, NewClass}, _From, State) ->
-    Repository = State#state.repository,
-    Result = gen_server:call(Repository, {createClass, NameSpace, NewClass}),
+    Result = repository:create_class(
+               State#state.repository, {createClass, NameSpace, NewClass}),
     {reply, Result, State};
 
 handle_call({modifyClass, NameSpace, ModifiedClass}, _From, State) ->
