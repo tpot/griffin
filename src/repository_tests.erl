@@ -3,6 +3,12 @@
 -include_lib("eunit/include/eunit.hrl").
 -include_lib("cim.hrl").
 
+%% Temporary version of get_class/3 client function
+
+get_class(Pid, NameSpace, ClassName) ->
+    gen_server:call(
+      Pid, {getClass, NameSpace, ClassName, true, true, false, []}).
+
 %% Specifying persistence without a filename is an error
 
 no_filename_persistent_test() ->
@@ -48,9 +54,7 @@ nonpersistence_nofile_test_() ->
                     Pid1, NameSpace, #class{name = ClassName})),
                ?_assertMatch(
                   {error, _},
-                  gen_server:call(
-                    Pid2, 
-                    {getClass, NameSpace, ClassName, true, true, true, []}))]
+                  get_class(Pid2, NameSpace, ClassName))]
       end]}.
 
 nonpersistence_file_test_() ->
@@ -76,9 +80,7 @@ nonpersistence_file_test_() ->
                     Pid1, NameSpace, #class{name = ClassName})),
                ?_assertMatch(
                   {error, _},
-                  gen_server:call(
-                    Pid2, 
-                    {getClass, NameSpace, ClassName, true, true, true, []}))]
+                  get_class(Pid2, NameSpace, ClassName))]
       end]}.
     
 persistence_file_test_() ->
@@ -105,9 +107,7 @@ persistence_file_test_() ->
                     Pid1, NameSpace, #class{name = ClassName})),
                ?_assertMatch(
                   {ok, Class},
-                  gen_server:call(
-                    Pid2, 
-                    {getClass, NameSpace, ClassName, true, true, true, []}))]
+                  get_class(Pid2, NameSpace, ClassName))]
       end]}.
 
 %% Test EnumerateClassNames operation
@@ -207,10 +207,6 @@ enumerate_class_names_test_() ->
       end]}.
 
 %% Test CreateClass operation
-
-get_class(Pid, NameSpace, ClassName) ->
-    gen_server:call(
-      Pid, {getClass, NameSpace, ClassName, true, true, false, []}).
 
 create_class_test_() ->
     NS = "test",
