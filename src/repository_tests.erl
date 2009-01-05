@@ -44,9 +44,8 @@ nonpersistence_nofile_test_() ->
               ClassName = "CIM_Foo",
               [?_assertEqual(
                   ok, 
-                  gen_server:call(
-                    Pid1, 
-                    {createClass, NameSpace, #class{name = ClassName}})),
+                  repository:create_class(
+                    Pid1, NameSpace, #class{name = ClassName})),
                ?_assertMatch(
                   {error, _},
                   gen_server:call(
@@ -73,8 +72,8 @@ nonpersistence_file_test_() ->
               ClassName = "CIM_Foo",
               [?_assertEqual(
                   ok,
-                  gen_server:call(
-                    Pid1, {createClass, NameSpace, #class{name = ClassName}})),
+                  repository:create_class(
+                    Pid1, NameSpace, #class{name = ClassName})),
                ?_assertMatch(
                   {error, _},
                   gen_server:call(
@@ -102,9 +101,8 @@ persistence_file_test_() ->
               Class = #class{name = ClassName},
               [?_assertEqual(
                   ok,
-                  gen_server:call(
-                    Pid1, 
-                    {createClass, NameSpace, #class{name = ClassName}})),
+                  repository:create_class(
+                    Pid1, NameSpace, #class{name = ClassName})),
                ?_assertMatch(
                   {ok, Class},
                   gen_server:call(
