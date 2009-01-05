@@ -297,7 +297,7 @@ handle_call({setProperty, _NameSpace, _InstanceName, _PropertyName, _NewValue},
 
 handle_call({createClass, NameSpace, NewClass}, _From, State) ->
     Result = repository:create_class(
-               State#state.repository, {createClass, NameSpace, NewClass}),
+               State#state.repository, NameSpace, NewClass),
     {reply, Result, State};
 
 handle_call({modifyClass, NameSpace, ModifiedClass}, _From, State) ->
