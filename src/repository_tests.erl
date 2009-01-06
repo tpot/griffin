@@ -224,30 +224,42 @@ create_class_test_() ->
               %% class must be ignored by the server.
               
               ClassName = "Griffin_Test",
-              
+              Qual = #qualifier{name = "Qual", value = "Foo"},
+              QualPropagated = Qual#qualifier{propagated = "True"},
+
               {"Ignore CLASSORIGIN and PROPAGATED attributes in create_class",
 
                ?_assertEqual(
                   {ok, #class{
                      name = ClassName,
-                     properties = [#property{name = "Prop"},
-                                   #property_array{name = "ArrayProp"},
-                                   #property_reference{name = "RefProp"}],
+                     qualifiers = [Qual],
+                     properties = [#property{name = "Prop",
+                                             qualifiers = [Qual]},
+                                   #property_array{name = "ArrayProp",
+                                                   qualifiers = [Qual]},
+                                   #property_reference{name = "RefProp",
+                                                       qualifiers = [Qual]}],
                      methods = [#method{name = "Meth"}]}},
                   begin
                       Class = 
                           #class{name = ClassName,
+                                 qualifiers = [QualPropagated],
                                  properties = [
                                      #property{name = "Prop",
-                                               classorigin = "blah",
-                                               propagated = "True"},
-                                     #property_array{name = "ArrayProp",
-                                                     classorigin = "blah",
-                                                     propagated = "True"},
-                                     #property_reference{name = "RefProp",
-                                                         classorigin = "blah",
-                                                         propagated = "True"}],
-                                methods = [
+                                         classorigin = "blah",
+                                         propagated = "True",
+                                         qualifiers = [QualPropagated]},
+                                     #property_array{
+                                         name = "ArrayProp",
+                                         classorigin = "blah",
+                                         propagated = "True",
+                                         qualifiers = [QualPropagated]},
+                                     #property_reference{
+                                         name = "RefProp",
+                                         classorigin = "blah",
+                                         propagated = "True",
+                                         qualifiers = [QualPropagated]}],
+                                 methods = [
                                      #method{name = "Meth",
                                              classorigin = "blah",
                                              propagated = "True"}]},

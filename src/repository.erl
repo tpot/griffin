@@ -179,37 +179,45 @@ internal_get_subclasses(Table, NameSpace, ClassName, DeepInheritance) ->
 
 %% Filter CLASSORIGIN and PROPAGATED attributes from a class definition
 
+filter_newclass_attributes_list(List) ->
+    lists:map(
+      fun(Elt) ->
+              case Elt of
+                  Prop when is_record(Elt, property) ->
+                      Prop#property{
+                          classorigin = undefined,
+                          propagated = undefined,
+                          qualifiers = 
+                          filter_newclass_attributes_list(
+                            Prop#property.qualifiers)};
+                  PropArray when is_record(Elt, property_array) ->
+                      PropArray#property_array{
+                          classorigin = undefined,
+                          propagated = undefined,
+                          qualifiers = filter_newclass_attributes_list(
+                            PropArray#property_array.qualifiers)};
+                  RefProp when is_record(Elt, property_reference) ->
+                      RefProp#property_reference{
+                          classorigin = undefined,
+                          propagated = undefined,
+                          qualifiers = filter_newclass_attributes_list(
+                            RefProp#property_reference.qualifiers)};
+                  Qual when is_record(Elt, qualifier) ->
+                      Qual#qualifier{propagated = undefined};
+                  Method when is_record(Elt, method) ->
+                      Method#method{classorigin = undefined,
+                                    propagated = undefined};
+                  Other ->
+                      Other
+              end
+      end, List).
+              
 filter_newclass_attributes(Class) ->
     Class#class{
-      properties = 
-          lists:map(
-            fun(Elt) ->
-                    case Elt of
-                        Prop when is_record(Elt, property) ->
-                            Prop#property
-                              {classorigin = undefined,
-                               propagated = undefined};
-                        PropArray when is_record(Elt, property_array) ->
-                            PropArray#property_array
-                              {classorigin = undefined,
-                               propagated = undefined};
-                        RefProp when is_record(Elt, property_reference) ->
-                            RefProp#property_reference
-                              {classorigin = undefined,
-                               propagated = undefined};
-                        Other ->
-                            Other
-                    end
-            end,
-            Class#class.properties),
-      methods = 
-          lists:map(
-            fun(Elt) ->
-                    Elt#method{classorigin = undefined,
-                               propagated = undefined}
-            end,
-            Class#class.methods)}.
-                    
+      qualifiers = filter_newclass_attributes_list(Class#class.qualifiers),
+      properties = filter_newclass_attributes_list(Class#class.properties),
+      methods    = filter_newclass_attributes_list(Class#class.methods)}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Initialise a repository instance.  Options allow persistent vs
