@@ -224,8 +224,32 @@ create_class_test_() ->
               %% class must be ignored by the server.
               
               ClassName = "Griffin_Test",
+
               Qual = #qualifier{name = "Qual", value = "Foo"},
-              QualPropagated = Qual#qualifier{propagated = "True"},
+              QualWithAttrs = Qual#qualifier{propagated = "True"},
+
+              Prop = #property{name = "Prop", qualifiers = [Qual]},
+              PropWithAttrs = Prop#property{classorigin = "blah",
+                                            propagated = "True",
+                                            qualifiers = [QualWithAttrs]},
+
+              PropArray = #property_array{name = "ArrayProp", 
+                                          qualifiers = [Qual]},
+              PropArrayWithAttrs = PropArray#property_array{
+                                     classorigin = "blah",
+                                     propagated = "True",
+                                     qualifiers = [QualWithAttrs]},
+
+              PropRef = #property_reference{name = "RefProp", 
+                                            qualifiers = [Qual]},
+              PropRefWithAttrs = PropRef#property_reference{
+                                   classorigin = "blah",
+                                   propagated = "True",
+                                   qualifiers = [QualWithAttrs]},
+
+              Meth = #method{name = "Meth"},
+              MethWithAttrs = Meth#method{classorigin = "blah",
+                                          propagated = "True"},
 
               {"Ignore CLASSORIGIN and PROPAGATED attributes in create_class",
 
@@ -233,37 +257,16 @@ create_class_test_() ->
                   {ok, #class{
                      name = ClassName,
                      qualifiers = [Qual],
-                     properties = [#property{name = "Prop",
-                                             qualifiers = [Qual]},
-                                   #property_array{name = "ArrayProp",
-                                                   qualifiers = [Qual]},
-                                   #property_reference{name = "RefProp",
-                                                       qualifiers = [Qual]}],
-                     methods = [#method{name = "Meth"}]}},
+                     properties = [Prop, PropArray, PropRef],
+                     methods = [Meth]}},
                   begin
                       Class = 
                           #class{name = ClassName,
-                                 qualifiers = [QualPropagated],
-                                 properties = [
-                                     #property{name = "Prop",
-                                         classorigin = "blah",
-                                         propagated = "True",
-                                         qualifiers = [QualPropagated]},
-                                     #property_array{
-                                         name = "ArrayProp",
-                                         classorigin = "blah",
-                                         propagated = "True",
-                                         qualifiers = [QualPropagated]},
-                                     #property_reference{
-                                         name = "RefProp",
-                                         classorigin = "blah",
-                                         propagated = "True",
-                                         qualifiers = [QualPropagated]}],
-                                 methods = [
-                                     #method{name = "Meth",
-                                             classorigin = "blah",
-                                             propagated = "True"}]},
-
+                                 qualifiers = [QualWithAttrs],
+                                 properties = [PropWithAttrs,
+                                               PropArrayWithAttrs,
+                                               PropRefWithAttrs],
+                                 methods = [MethWithAttrs]},
                       repository:create_class(Pid, NS, Class),
                       get_class(Pid, NS, ClassName)
                   end)}
