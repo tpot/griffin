@@ -205,8 +205,29 @@ filter_newclass_attributes_list(List) ->
                   Qual when is_record(Elt, qualifier) ->
                       Qual#qualifier{propagated = undefined};
                   Method when is_record(Elt, method) ->
-                      Method#method{classorigin = undefined,
-                                    propagated = undefined};
+                      Method#method{
+                          classorigin = undefined,
+                          propagated = undefined,
+                          qualifiers = filter_newclass_attributes_list(
+                                         Method#method.qualifiers),
+                          parameters = filter_newclass_attributes_list(
+                                         Method#method.parameters)};
+                  Param when is_record(Elt, parameter) ->
+                      Param#parameter{
+                        qualifiers = filter_newclass_attributes_list(
+                           Param#parameter.qualifiers)};
+                  RefParam when is_record(Elt, parameter_reference) ->
+                      RefParam#parameter_reference{
+                        qualifiers = filter_newclass_attributes_list(
+                           RefParam#parameter_reference.qualifiers)};
+                  ArrayParam when is_record(Elt, parameter_array) ->
+                      ArrayParam#parameter_array{
+                        qualifiers = filter_newclass_attributes_list(
+                           ArrayParam#parameter_array.qualifiers)};
+                  RefArrayParam when is_record(Elt, parameter_refarray) ->
+                      RefArrayParam#parameter_refarray{
+                        qualifiers = filter_newclass_attributes_list(
+                           RefArrayParam#parameter_refarray.qualifiers)};
                   Other ->
                       Other
               end

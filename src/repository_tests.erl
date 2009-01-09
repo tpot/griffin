@@ -247,9 +247,38 @@ create_class_test_() ->
                                    propagated = "True",
                                    qualifiers = [QualWithAttrs]},
 
-              Meth = #method{name = "Meth"},
+              Param = #parameter{name = "Param",
+                                 qualifiers = [Qual]},
+              ParamWithAttrs = Param#parameter{qualifiers = [QualWithAttrs]},
+
+              RefParam = #parameter_reference{name = "RefParam",
+                                              qualifiers = [Qual]},
+              RefParamWithAttrs = RefParam#parameter_reference{
+                                    qualifiers = [QualWithAttrs]},
+
+              ArrayParam = #parameter_array{name = "ArrayParam",
+                                            qualifiers = [Qual]},
+              ArrayParamWithAttrs = ArrayParam#parameter_array{
+                                      qualifiers = [QualWithAttrs]},
+
+              RefArrayParam = #parameter_refarray{name = "RefArrayParam",
+                                                   qualifiers = [Qual]},
+              RefArrayParamWithAttrs = RefArrayParam#parameter_refarray{
+                                         qualifiers = [QualWithAttrs]},
+
+              Meth = #method{name = "Meth",
+                             qualifiers = [Qual],
+                             parameters = [Param, RefParam, ArrayParam,
+                                           RefArrayParam]},
               MethWithAttrs = Meth#method{classorigin = "blah",
-                                          propagated = "True"},
+                                          propagated = "True",
+                                          qualifiers = [QualWithAttrs],
+                                          parameters = 
+                                              [ParamWithAttrs,
+                                               RefParamWithAttrs,
+                                               ArrayParamWithAttrs,
+                                               RefArrayParamWithAttrs]},
+                                               
 
               {"Ignore CLASSORIGIN and PROPAGATED attributes in create_class",
 
