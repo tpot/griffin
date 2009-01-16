@@ -177,67 +177,94 @@ internal_get_subclasses(Table, NameSpace, ClassName, DeepInheritance) ->
             end
     end.
 
-%% Filter CLASSORIGIN and PROPAGATED attributes from a class definition
+%% Apply a function to all CLASSORIGIN attributes in a class definition
 
-filter_newclass_attributes_list(List) ->
+map_classorigin(Fun, Class) when is_record(Class, class) ->
+    Class#class{
+      properties = map_classorigin(Fun, Class#class.properties),
+      methods    = map_classorigin(Fun, Class#class.methods)};
+
+map_classorigin(Fun, List) when is_list(List) ->
     lists:map(
       fun(Elt) ->
               case Elt of
                   Prop when is_record(Elt, property) ->
                       Prop#property{
-                          classorigin = undefined,
-                          propagated = undefined,
-                          qualifiers = 
-                          filter_newclass_attributes_list(
-                            Prop#property.qualifiers)};
+                        classorigin = Fun(Prop#property.classorigin)};
                   PropArray when is_record(Elt, property_array) ->
                       PropArray#property_array{
-                          classorigin = undefined,
-                          propagated = undefined,
-                          qualifiers = filter_newclass_attributes_list(
-                            PropArray#property_array.qualifiers)};
+                        classorigin = 
+                          Fun(PropArray#property_array.classorigin)};
                   RefProp when is_record(Elt, property_reference) ->
                       RefProp#property_reference{
-                          classorigin = undefined,
-                          propagated = undefined,
-                          qualifiers = filter_newclass_attributes_list(
-                            RefProp#property_reference.qualifiers)};
-                  Qual when is_record(Elt, qualifier) ->
-                      Qual#qualifier{propagated = undefined};
+                        classorigin = 
+                          Fun(RefProp#property_reference.classorigin)};
                   Method when is_record(Elt, method) ->
                       Method#method{
-                          classorigin = undefined,
-                          propagated = undefined,
-                          qualifiers = filter_newclass_attributes_list(
-                                         Method#method.qualifiers),
-                          parameters = filter_newclass_attributes_list(
-                                         Method#method.parameters)};
-                  Param when is_record(Elt, parameter) ->
-                      Param#parameter{
-                        qualifiers = filter_newclass_attributes_list(
-                           Param#parameter.qualifiers)};
-                  RefParam when is_record(Elt, parameter_reference) ->
-                      RefParam#parameter_reference{
-                        qualifiers = filter_newclass_attributes_list(
-                           RefParam#parameter_reference.qualifiers)};
-                  ArrayParam when is_record(Elt, parameter_array) ->
-                      ArrayParam#parameter_array{
-                        qualifiers = filter_newclass_attributes_list(
-                           ArrayParam#parameter_array.qualifiers)};
-                  RefArrayParam when is_record(Elt, parameter_refarray) ->
-                      RefArrayParam#parameter_refarray{
-                        qualifiers = filter_newclass_attributes_list(
-                           RefArrayParam#parameter_refarray.qualifiers)};
+                        classorigin = Fun(Method#method.classorigin)};
                   Other ->
                       Other
               end
       end, List).
-              
-filter_newclass_attributes(Class) ->
+
+%% Apply a function to all PROPAGATED attributes in a class definition
+
+map_propagated(Fun, Class) when is_record(Class, class) ->
     Class#class{
-      qualifiers = filter_newclass_attributes_list(Class#class.qualifiers),
-      properties = filter_newclass_attributes_list(Class#class.properties),
-      methods    = filter_newclass_attributes_list(Class#class.methods)}.
+      qualifiers = map_propagated(Fun, Class#class.qualifiers),
+      properties = map_propagated(Fun, Class#class.properties),
+      methods    = map_propagated(Fun, Class#class.methods)};    
+
+map_propagated(Fun, List) when is_list(List) ->
+    lists:map(
+      fun(Elt) ->
+              case Elt of
+                  Prop when is_record(Elt, property) ->
+                      Prop#property{
+                          propagated = Fun(Prop#property.propagated),
+                          qualifiers = 
+                            map_propagated(Fun, Prop#property.qualifiers)};
+                  PropArray when is_record(Elt, property_array) ->
+                      PropArray#property_array{
+                          propagated = Fun(PropArray#property_array.propagated),
+                          qualifiers = map_propagated(
+                            Fun, PropArray#property_array.qualifiers)};
+                  RefProp when is_record(Elt, property_reference) ->
+                      RefProp#property_reference{
+                          propagated = 
+                            Fun(RefProp#property_reference.propagated),
+                          qualifiers = map_propagated(
+                            Fun, RefProp#property_reference.qualifiers)};
+                  Qual when is_record(Elt, qualifier) ->
+                      Qual#qualifier{
+                        propagated = Fun(Qual#qualifier.propagated)};
+                  Method when is_record(Elt, method) ->
+                      Method#method{
+                          propagated = Fun(Method#method.propagated),
+                          qualifiers = map_propagated(
+                                         Fun, Method#method.qualifiers),
+                          parameters = map_propagated(
+                                         Fun, Method#method.parameters)};
+                  Param when is_record(Elt, parameter) ->
+                      Param#parameter{
+                        qualifiers = map_propagated(
+                           Fun, Param#parameter.qualifiers)};
+                  RefParam when is_record(Elt, parameter_reference) ->
+                      RefParam#parameter_reference{
+                        qualifiers = map_propagated(
+                           Fun, RefParam#parameter_reference.qualifiers)};
+                  ArrayParam when is_record(Elt, parameter_array) ->
+                      ArrayParam#parameter_array{
+                        qualifiers = map_propagated(
+                           Fun, ArrayParam#parameter_array.qualifiers)};
+                  RefArrayParam when is_record(Elt, parameter_refarray) ->
+                      RefArrayParam#parameter_refarray{
+                        qualifiers = map_propagated(
+                           Fun, RefArrayParam#parameter_refarray.qualifiers)};
+                  Other ->
+                      Other
+              end
+      end, List).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -333,7 +360,11 @@ handle_call({createClass, NameSpace, NewClass}, _From, State) ->
     error_logger:info_msg("createClass ~s:~s~n", 
                           [NameSpace, NewClass#class.name]),
     Key = {class, NameSpace, string:to_lower(NewClass#class.name)},
-    Value = filter_newclass_attributes(NewClass),
+    Value = map_classorigin(
+              fun(_ClassOrigin) -> undefined end, 
+              map_propagated(
+                fun(_Propagated) -> undefined end,
+                NewClass)),
     case insert(State, {Key, Value}) of
         ok ->
             {reply, ok, State};
