@@ -278,7 +278,6 @@ create_class_test_() ->
                                                RefParamWithAttrs,
                                                ArrayParamWithAttrs,
                                                RefArrayParamWithAttrs]},
-                                               
 
               {"Ignore CLASSORIGIN and PROPAGATED attributes in create_class",
 
@@ -286,8 +285,11 @@ create_class_test_() ->
                   {ok, #class{
                      name = ClassName,
                      qualifiers = [Qual],
-                     properties = [Prop, PropArray, PropRef],
-                     methods = [Meth]}},
+                     properties = [
+                       Prop#property{classorigin = ClassName}, 
+                       PropArray#property_array{classorigin = ClassName}, 
+                       PropRef#property_reference{classorigin = ClassName}],
+                     methods = [Meth#method{classorigin = ClassName}]}},
                   begin
                       Class = 
                           #class{name = ClassName,
@@ -299,4 +301,38 @@ create_class_test_() ->
                       repository:create_class(Pid, NS, Class),
                       get_class(Pid, NS, ClassName)
                   end)}
+      end,
+      
+      fun(Pid) ->
+              
+              %% If class has no superclass, all properties and
+              %% methods of the new class have a CLASSORGIN attribute
+              %% whose value is the name of the new class.
+              
+              ClassName = "Griffin_Test",
+              SubclassName = "Griffin_Test2",
+
+              Prop = #property{name = "Prop"},
+              PropArray = #property_array{name = "ArrayProp"},
+              PropRef = #property_reference{name = "RefProp"},
+              Meth = #method{name = "Meth"},
+
+              [{"CLASSORIGIN attributes set on base class in create_class",
+               
+                ?_assertEqual(
+                   {ok, #class{
+                      name = ClassName,
+                      properties = 
+                        [Prop#property{classorigin = ClassName},
+                         PropArray#property_array{classorigin = ClassName},
+                         PropRef#property_reference{classorigin = ClassName}],
+                      methods = [Meth#method{classorigin = ClassName}]}},
+                   begin
+                       Class =
+                           #class{name = ClassName,
+                                  properties = [Prop, PropArray, PropRef],
+                                  methods = [Meth]},
+                       repository:create_class(Pid, NS, Class),
+                       get_class(Pid, NS, ClassName)
+                   end)}]
       end]}.

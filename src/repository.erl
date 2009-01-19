@@ -361,7 +361,15 @@ handle_call({createClass, NameSpace, NewClass}, _From, State) ->
                           [NameSpace, NewClass#class.name]),
     Key = {class, NameSpace, string:to_lower(NewClass#class.name)},
     Value = map_classorigin(
-              fun(_ClassOrigin) -> undefined end, 
+              fun(_ClassOrigin) -> 
+                      case NewClass#class.superclass of
+                          %% Set classorigin to base class
+                          undefined ->
+                              NewClass#class.name;
+                          _ ->
+                              undefined
+                      end
+              end,
               map_propagated(
                 fun(_Propagated) -> undefined end,
                 NewClass)),
