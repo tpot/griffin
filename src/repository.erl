@@ -177,6 +177,26 @@ internal_get_subclasses(Table, NameSpace, ClassName, DeepInheritance) ->
             end
     end.
 
+%% Get inheritance hierachy for a class
+
+internal_get_superclass(Table, NameSpace, ClassName) ->
+    Key = {class, NameSpace, string:to_lower(ClassName)},
+    case lookup(Table, Key) of
+        [{_, Class}] ->
+            Class#class.superclass;
+        _ ->
+            undefined
+    end.
+
+internal_get_superclasses(Table, NameSpace, ClassName) ->
+    case internal_get_superclass(Table, NameSpace, ClassName) of
+        undefined ->
+            [];
+        SuperClass ->
+            internal_get_superclasses(Table, NameSpace, SuperClass) ++ 
+                [SuperClass]
+    end.
+
 %% Apply a function to all CLASSORIGIN attributes in a class definition
 
 map_classorigin(Fun, Class) when is_record(Class, class) ->
