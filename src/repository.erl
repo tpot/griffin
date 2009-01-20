@@ -339,19 +339,46 @@ handle_call(stop, _From, State) ->
 
 %% GetClass
 
-handle_call({getClass, NameSpace, ClassName, _LocalOnly, _IncludeQualifiers,
+handle_call({getClass, NameSpace, ClassName, LocalOnly, _IncludeQualifiers,
              _IncludeClassOrigin, _PropertyList}, _From, State) ->
     error_logger:info_msg("getClass ~s:~s~n", [NameSpace, ClassName]),
-    Key = {class, NameSpace, string:to_lower(ClassName)},
-    case lookup(State, Key) of
-        [{_, Class}] ->
-            {reply, {ok, Class}, State};
-        [] ->
-            Msg = io_lib:format("Class ~s not found", [ClassName]),
-            {reply, {error, {?CIM_ERR_NOT_FOUND, Msg}}, State};
-        {error, Reason} ->
-            {reply, {error, {?CIM_ERR_FAILED, Reason}}, State}
-    end;
+    ClassList = case LocalOnly of
+                    true ->
+                        [];
+                    false ->
+                        internal_get_superclasses(State, NameSpace, ClassName)
+                end ++ [ClassName],
+    Result = lists:foldl(
+               fun(SubclassName, Acc) ->
+                       Key = {class, NameSpace, string:to_lower(SubclassName)},
+                       case lookup(State, Key) of
+                           [{_, Subclass}] ->
+                               Acc#class{
+                                 name = Subclass#class.name,
+                                 superclass = Subclass#class.superclass,
+                                 properties = 
+                                   lists:append(Acc#class.properties,
+                                                Subclass#class.properties),
+                                 methods =
+                                   lists:append(Acc#class.methods,
+                                                Subclass#class.methods),
+                                 qualifiers =
+                                   lists:append(Acc#class.qualifiers,
+                                                Subclass#class.qualifiers)};
+                           _ ->
+                               Acc
+                       end
+               end, 
+               #class{},
+               ClassList),
+    {reply, 
+     case Result#class.name of 
+         undefined ->
+             {error, {?CIM_ERR_NOT_FOUND}};
+         _ ->
+             {ok, Result}
+     end,
+     State};
 
 %% DeleteClass
 
