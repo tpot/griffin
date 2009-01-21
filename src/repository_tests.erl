@@ -226,58 +226,25 @@ create_class_test_() ->
               ClassName = "Griffin_Test",
 
               Qual = #qualifier{name = "Qual", value = "Foo"},
-              QualWithAttrs = Qual#qualifier{propagated = "True"},
 
               Prop = #property{name = "Prop", qualifiers = [Qual]},
-              PropWithAttrs = Prop#property{classorigin = "blah",
-                                            propagated = "True",
-                                            qualifiers = [QualWithAttrs]},
+              PropArray = #property_array{
+                name = "ArrayProp", qualifiers = [Qual]},
+              PropRef = #property_reference{
+                name = "RefProp", qualifiers = [Qual]},
 
-              PropArray = #property_array{name = "ArrayProp", 
-                                          qualifiers = [Qual]},
-              PropArrayWithAttrs = PropArray#property_array{
-                                     classorigin = "blah",
-                                     propagated = "True",
-                                     qualifiers = [QualWithAttrs]},
+              Param = #parameter{
+                name = "Param", qualifiers = [Qual]},
+              RefParam = #parameter_reference{
+                name = "RefParam", qualifiers = [Qual]},
+              ArrayParam = #parameter_array{
+                name = "ArrayParam", qualifiers = [Qual]},
+              RefArrayParam = #parameter_refarray{
+                name = "RefArrayParam", qualifiers = [Qual]},
 
-              PropRef = #property_reference{name = "RefProp", 
-                                            qualifiers = [Qual]},
-              PropRefWithAttrs = PropRef#property_reference{
-                                   classorigin = "blah",
-                                   propagated = "True",
-                                   qualifiers = [QualWithAttrs]},
-
-              Param = #parameter{name = "Param",
-                                 qualifiers = [Qual]},
-              ParamWithAttrs = Param#parameter{qualifiers = [QualWithAttrs]},
-
-              RefParam = #parameter_reference{name = "RefParam",
-                                              qualifiers = [Qual]},
-              RefParamWithAttrs = RefParam#parameter_reference{
-                                    qualifiers = [QualWithAttrs]},
-
-              ArrayParam = #parameter_array{name = "ArrayParam",
-                                            qualifiers = [Qual]},
-              ArrayParamWithAttrs = ArrayParam#parameter_array{
-                                      qualifiers = [QualWithAttrs]},
-
-              RefArrayParam = #parameter_refarray{name = "RefArrayParam",
-                                                   qualifiers = [Qual]},
-              RefArrayParamWithAttrs = RefArrayParam#parameter_refarray{
-                                         qualifiers = [QualWithAttrs]},
-
-              Meth = #method{name = "Meth",
-                             qualifiers = [Qual],
-                             parameters = [Param, RefParam, ArrayParam,
-                                           RefArrayParam]},
-              MethWithAttrs = Meth#method{classorigin = "blah",
-                                          propagated = "True",
-                                          qualifiers = [QualWithAttrs],
-                                          parameters = 
-                                              [ParamWithAttrs,
-                                               RefParamWithAttrs,
-                                               ArrayParamWithAttrs,
-                                               RefArrayParamWithAttrs]},
+              Meth = #method{
+                name = "Meth", qualifiers = [Qual],
+                parameters = [Param, RefParam, ArrayParam, RefArrayParam]},
 
               {"Ignore CLASSORIGIN and PROPAGATED attributes in create_class",
 
@@ -289,15 +256,51 @@ create_class_test_() ->
                        Prop#property{classorigin = ClassName}, 
                        PropArray#property_array{classorigin = ClassName}, 
                        PropRef#property_reference{classorigin = ClassName}],
-                     methods = [Meth#method{classorigin = ClassName}]}},
+                     methods = [
+                       Meth#method{
+                         classorigin = ClassName,
+                         parameters = 
+                           [Param, RefParam, ArrayParam, RefArrayParam]}]}},
                   begin
+
+                      %% Create class with classorigin and propagated
+                      %% attributes set to invalid values.
+
                       Class = 
-                          #class{name = ClassName,
-                                 qualifiers = [QualWithAttrs],
-                                 properties = [PropWithAttrs,
-                                               PropArrayWithAttrs,
-                                               PropRefWithAttrs],
-                                 methods = [MethWithAttrs]},
+                          #class{
+                            name = ClassName,
+                            qualifiers = [Qual#qualifier{propagated = "bar"}],
+                            properties = 
+                              [Prop#property{
+                                 classorigin = "foo",
+                                 propagated = "bar",
+                                 qualifiers = 
+                                 [Qual#qualifier{propagated = "bar"}]},
+                               PropArray#property_array{
+                                 classorigin = "foo",
+                                 propagated = "bar",
+                                 qualifiers =
+                                 [Qual#qualifier{propagated = "bar"}]},
+                               PropRef#property_reference{
+                                 classorigin = "foo",
+                                 propagated = "bar",
+                                 qualifiers = 
+                                 [Qual#qualifier{propagated = "bar"}]}],
+                             methods = 
+                               [Meth#method{
+                                  classorigin = "foo",
+                                  propagated = "bar",
+                                  parameters = 
+                                    [Param#parameter{qualifiers = 
+                                      [Qual#qualifier{propagated = "bar"}]},
+                                     RefParam#parameter_reference{qualifiers = 
+                                      [Qual#qualifier{propagated = "bar"}]},
+                                     ArrayParam#parameter_array{qualifiers =
+                                      [Qual#qualifier{propagated = "bar"}]},
+                                     RefArrayParam#parameter_refarray{
+                                       qualifiers = 
+                                         [Qual#qualifier{
+                                            propagated = "bar"}]}]}]},
                       repository:create_class(Pid, NS, Class),
                       get_class(Pid, NS, ClassName)
                   end)}
