@@ -313,7 +313,6 @@ create_class_test_() ->
               %% whose value is the name of the new class.
               
               ClassName = "Griffin_Test",
-              SubclassName = "Griffin_Test2",
 
               Prop = #property{name = "Prop"},
               PropArray = #property_array{name = "ArrayProp"},
