@@ -319,22 +319,22 @@ create_class_test_() ->
               PropRef = #property_reference{name = "RefProp"},
               Meth = #method{name = "Meth"},
 
-              [{"CLASSORIGIN attributes set on base class in create_class",
+              {"CLASSORIGIN attributes set on base class in create_class",
                
-                ?_assertEqual(
-                   {ok, #class{
-                      name = ClassName,
-                      properties = 
-                        [Prop#property{classorigin = ClassName},
-                         PropArray#property_array{classorigin = ClassName},
-                         PropRef#property_reference{classorigin = ClassName}],
-                      methods = [Meth#method{classorigin = ClassName}]}},
-                   begin
-                       Class =
-                           #class{name = ClassName,
-                                  properties = [Prop, PropArray, PropRef],
-                                  methods = [Meth]},
-                       repository:create_class(Pid, NS, Class),
-                       get_class(Pid, NS, ClassName)
-                   end)}]
+               ?_assertEqual(
+                  {ok, #class{
+                     name = ClassName,
+                     properties = 
+                     [Prop#property{classorigin = ClassName},
+                      PropArray#property_array{classorigin = ClassName},
+                      PropRef#property_reference{classorigin = ClassName}],
+                     methods = [Meth#method{classorigin = ClassName}]}},
+                  begin
+                      Class =
+                          #class{name = ClassName,
+                                 properties = [Prop, PropArray, PropRef],
+                                 methods = [Meth]},
+                      repository:create_class(Pid, NS, Class),
+                      get_class(Pid, NS, ClassName)
+                  end)}
       end]}.
