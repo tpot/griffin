@@ -353,4 +353,21 @@ create_class_test_() ->
                       Class = #class{name = ClassName, superclass = "Foo"},
                       repository:create_class(Pid, NS, Class)
                   end)}
-      end]}.
+      end,
+     
+     fun(Pid) ->
+            
+            %% Check class does not already exists
+
+            ClassName = "Griffin_Test",
+
+            {"Class does not already exist",
+
+             ?_assertEqual(
+               {error, {?CIM_ERR_ALREADY_EXISTS}},
+               begin
+                  Class = #class{name = ClassName},
+                  repository:create_class(Pid, NS, Class),
+                  repository:create_class(Pid, NS, Class)
+               end)}
+     end]}.

@@ -422,6 +422,15 @@ handle_call({createClass, NameSpace, NewClass}, _From, State) ->
                           [NameSpace, NewClass#class.name]),
     try
         
+        %% Check class does not already exists
+
+        case lookup(State, class_key(NameSpace, NewClass)) of
+            [{_, NewClass}] ->
+                throw({error, {?CIM_ERR_ALREADY_EXISTS}});
+            _ ->
+                ok
+        end,
+
         %% Check superclass exists
                  
         case NewClass#class.superclass of
