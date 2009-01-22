@@ -337,4 +337,20 @@ create_class_test_() ->
                       repository:create_class(Pid, NS, Class),
                       get_class(Pid, NS, ClassName)
                   end)}
+      end,
+      
+      fun(Pid) ->
+
+              %% If new class has a superclass it must exist.
+
+              ClassName = "Griffin_Test",
+
+              {"Superclass must exist",
+               
+               ?_assertEqual(
+                  {error, {?CIM_ERR_INVALID_SUPERCLASS}},
+                  begin
+                      Class = #class{name = ClassName, superclass = "Foo"},
+                      repository:create_class(Pid, NS, Class)
+                  end)}
       end]}.

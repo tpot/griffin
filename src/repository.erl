@@ -180,8 +180,7 @@ internal_get_subclasses(Table, NameSpace, ClassName, DeepInheritance) ->
 %% Get inheritance hierachy for a class
 
 internal_get_superclass(Table, NameSpace, ClassName) ->
-    Key = {class, NameSpace, string:to_lower(ClassName)},
-    case lookup(Table, Key) of
+    case lookup(Table, class_key(NameSpace, ClassName)) of
         [{_, Class}] ->
             Class#class.superclass;
         _ ->
@@ -286,6 +285,22 @@ map_propagated(Fun, List) when is_list(List) ->
               end
       end, List).
 
+%% Return keys suitable for use by ETS/DETS
+
+class_key(NameSpace, Class) when is_record(Class, class) ->
+    {class, NameSpace, string:to_lower(Class#class.name)};
+
+class_key(NameSpace, ClassName) ->
+    {class, NameSpace, string:to_lower(ClassName)}.
+
+qualdecl_key(NameSpace, QualifierDecl) 
+  when is_record(QualifierDecl, qualifier_declaration) ->
+    {qualifier_declaration, NameSpace, 
+     QualifierDecl#qualifier_declaration.name};
+
+qualdecl_key(NameSpace, QualDeclName) ->
+    {qualifier_declaration, NameSpace, string:to_lower(QualDeclName)}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Initialise a repository instance.  Options allow persistent vs
@@ -350,8 +365,7 @@ handle_call({getClass, NameSpace, ClassName, LocalOnly, _IncludeQualifiers,
                 end ++ [ClassName],
     Result = lists:foldl(
                fun(SubclassName, Acc) ->
-                       Key = {class, NameSpace, string:to_lower(SubclassName)},
-                       case lookup(State, Key) of
+                       case lookup(State, class_key(NameSpace, SubclassName)) of
                            [{_, Subclass}] ->
                                Acc#class{
                                  name = Subclass#class.name,
@@ -384,7 +398,7 @@ handle_call({getClass, NameSpace, ClassName, LocalOnly, _IncludeQualifiers,
 
 handle_call({deleteClass, NameSpace, ClassName}, _From, State) ->
     error_logger:info_msg("deleteClass ~s:~s~n", [NameSpace, ClassName]),
-    Key = {class, NameSpace, string:to_lower(ClassName)},
+    Key = class_key(NameSpace, ClassName),
     case lookup(State, Key) of
         [{Key, _}] ->
             case delete(State, Key) of
@@ -406,25 +420,52 @@ handle_call({deleteClass, NameSpace, ClassName}, _From, State) ->
 handle_call({createClass, NameSpace, NewClass}, _From, State) ->
     error_logger:info_msg("createClass ~s:~s~n", 
                           [NameSpace, NewClass#class.name]),
-    Key = {class, NameSpace, string:to_lower(NewClass#class.name)},
-    Value = map_classorigin(
-              fun(_ClassOrigin) -> 
-                      case NewClass#class.superclass of
-                          %% Set classorigin to base class
-                          undefined ->
-                              NewClass#class.name;
-                          _ ->
-                              undefined
-                      end
-              end,
-              map_propagated(
-                fun(_Propagated) -> undefined end,
-                NewClass)),
-    case insert(State, {Key, Value}) of
-        ok ->
-            {reply, ok, State};
-        {error, Reason} ->
-            {reply, {error, {?CIM_ERR_FAILED, Reason}}, State}
+    try
+        
+        %% Check superclass exists
+                 
+        case NewClass#class.superclass of
+            undefined ->
+                ok;
+            _ ->
+                case lookup(State, 
+                            class_key(NameSpace, NewClass#class.superclass)) of
+                    [{_, _Superclass}] ->
+                        ok;
+                    _ ->
+                        throw({error, {?CIM_ERR_INVALID_SUPERCLASS}})
+                end
+        end,
+        
+        %% Set classorigin to base class and clear propagated
+        %% attribute.
+        
+        Value = map_classorigin(
+                  fun(_ClassOrigin) -> 
+                          case NewClass#class.superclass of
+                              undefined ->
+                                  NewClass#class.name;
+                              _ ->
+                                  undefined
+                          end
+                  end,
+                  map_propagated(fun(_Propagated) -> undefined end, NewClass)),
+        
+        %% Add class to repository
+        
+        case insert(State, 
+                    {class_key(NameSpace, NewClass), Value}) of
+            ok ->
+                {reply, ok, State};
+            {error, Reason} ->
+                {reply, {error, {?CIM_ERR_FAILED, Reason}}, State}
+        end
+        
+    catch
+        {error, ErrorCode} ->
+            {reply, {error, ErrorCode}, State};
+          Oops ->
+            {reply, {error, {?CIM_ERR_FAILED}}, State}
     end;
 
 %% ModifyClass
@@ -432,7 +473,7 @@ handle_call({createClass, NameSpace, NewClass}, _From, State) ->
 handle_call({modifyClass, NameSpace, ModifiedClass}, _From, State) ->
     error_logger:info_msg("modifyClass ~s:~s~n",
                           [NameSpace, ModifiedClass#class.name]),
-    Key = {class, NameSpace, string:to_lower(ModifiedClass#class.name)},
+    Key = class_key(NameSpace, ModifiedClass),
     case lookup(State, Key) of
         [{Key, _}] ->
             case insert(State, {Key, ModifiedClass}) of
@@ -458,7 +499,7 @@ handle_call({enumerateClasses, NameSpace, ClassName, DeepInheritance,
                           [NameSpace, ClassName, DeepInheritance]),
     ClassNames = 
         internal_get_subclasses(State, NameSpace, ClassName, DeepInheritance),
-    Classes = [case lookup(State, {class, NameSpace, string:to_lower(CN)}) of
+    Classes = [case lookup(State, class_key(NameSpace, CN)) of
                    [{_, Class}] ->
                        Class
                end || CN <- ClassNames],
@@ -484,9 +525,7 @@ handle_call({setQualifier, NameSpace, QualifierDeclaration}, _From, State) ->
     error_logger:info_msg(
       "setQualifier ~s:~s~n", 
       [NameSpace, QualifierDeclaration#qualifier_declaration.name]),
-    Key = {qualifier_declaration, 
-           NameSpace, 
-           string:to_lower(QualifierDeclaration#qualifier_declaration.name)},
+    Key = qualdecl_key(NameSpace, QualifierDeclaration),
     case insert(State, {Key, QualifierDeclaration}) of
         ok ->
             {reply, ok, State};
@@ -512,9 +551,7 @@ handle_call({enumerateQualifiers, NameSpace}, _From, State) ->
 
 handle_call({getQualifier, NameSpace, Name}, _From, State) ->
     error_logger:info_msg("getQualifier ~s:~s~n", [NameSpace, Name]),
-    case lookup(
-           State, 
-           {qualifier_declaration, NameSpace, string:to_lower(Name)}) of
+    case lookup(State, qualdecl_key(NameSpace, Name)) of
         [{_Key, Value}] -> 
             {reply, {ok, Value}, State};
         [] -> 
@@ -528,7 +565,7 @@ handle_call({getQualifier, NameSpace, Name}, _From, State) ->
 
 handle_call({deleteQualifier, NameSpace, Name}, _From, State) ->
     error_logger:info_msg("deleteQualifier ~s:~s~n", [NameSpace, Name]),
-    Key = {qualifier_declaration, NameSpace, string:to_lower(Name)},
+    Key = qualdecl_key(NameSpace, Name),
     case lookup(State, Key) of
 	[{Key, _}] -> 
 	    case delete(State, Key) of
