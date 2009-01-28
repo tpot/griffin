@@ -473,7 +473,7 @@ handle_call({createClass, NameSpace, NewClass}, _From, State) ->
     catch
         {error, ErrorCode} ->
             {reply, {error, ErrorCode}, State};
-          Oops ->
+         _Oops ->
             {reply, {error, {?CIM_ERR_FAILED}}, State}
     end;
 
