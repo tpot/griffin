@@ -4,7 +4,7 @@
 %% client interface
 
 -export([start_link/1, get_subclasses/4, isa/4, get_class/7, stop/1,
-         create_class/3,
+         create_class/3, delete_class/3,
          enumerate_class_names/2, enumerate_class_names/3, 
          enumerate_class_names/4]).
 
@@ -39,6 +39,9 @@ get_class(Repository, NameSpace, ClassName, LocalOnly, IncludeQualifiers,
 
 create_class(Pid, NameSpace, NewClass) ->
     gen_server:call(Pid, {createClass, NameSpace, NewClass}).
+
+delete_class(Pid, NameSpace, ClassName) ->
+    gen_server:call(Pid, {deleteClass, NameSpace, ClassName}).
 
 enumerate_class_names(Repository, NameSpace) ->
     enumerate_class_names(Repository, NameSpace, undefined).
