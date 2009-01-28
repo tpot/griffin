@@ -301,6 +301,16 @@ qualdecl_key(NameSpace, QualifierDecl)
 qualdecl_key(NameSpace, QualDeclName) ->
     {qualifier_declaration, NameSpace, string:to_lower(QualDeclName)}.
 
+%% Return true/false for the existence of a class
+
+class_exists(Table, NameSpace, ClassOrClassName) ->
+    case lookup(Table, class_key(NameSpace, ClassOrClassName)) of
+        [{_, _}] ->
+            true;
+        _ ->
+            false
+    end.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Initialise a repository instance.  Options allow persistent vs
@@ -424,10 +434,10 @@ handle_call({createClass, NameSpace, NewClass}, _From, State) ->
         
         %% Check class does not already exists
 
-        case lookup(State, class_key(NameSpace, NewClass)) of
-            [{_, NewClass}] ->
+        case class_exists(State, NameSpace, NewClass#class.name) of
+            true ->
                 throw({error, {?CIM_ERR_ALREADY_EXISTS}});
-            _ ->
+            false ->
                 ok
         end,
 
