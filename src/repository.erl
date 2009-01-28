@@ -411,21 +411,42 @@ handle_call({getClass, NameSpace, ClassName, LocalOnly, _IncludeQualifiers,
 
 handle_call({deleteClass, NameSpace, ClassName}, _From, State) ->
     error_logger:info_msg("deleteClass ~s:~s~n", [NameSpace, ClassName]),
-    Key = class_key(NameSpace, ClassName),
-    case lookup(State, Key) of
-        [{Key, _}] ->
-            case delete(State, Key) of
-                ok ->
-                    {reply, ok, State};
-                {error, Reason} ->
-                    {reply, {error, {?CIM_ERR_FAILED, Reason}}, State}
-            end;
-        [] ->
-            Msg = io_lib:format("Classname ~s not found", [ClassName]),
-            {reply, {error, {?CIM_ERR_NOT_FOUND, Msg}}, State};
-        {error, Reason} ->
-            Msg = io_lib:format("Classname lookup failed: ~s", [Reason]),
-            {reply, {error, {?CIM_ERR_FAILED, Msg}}, State}
+    try
+
+        %% Check class exists
+
+        case class_exists(State, NameSpace, ClassName) of
+            false ->
+                throw({error, {?CIM_ERR_NOT_FOUND}});
+            _ ->
+                ok
+        end,
+
+        %% Check class has no children
+
+        case internal_get_subclasses(State, NameSpace, ClassName, false) of
+            [] ->
+                ok;
+            _ ->
+                throw({error, {?CIM_ERR_CLASS_HAS_CHILDREN}})
+        end,
+
+        %% Delete class from repository
+        
+        case delete(State, class_key(NameSpace, ClassName)) of
+            ok ->
+                ok;
+            {error, Reason} ->
+                throw({error, {?CIM_ERR_FAILED, Reason}})
+        end,
+
+        {reply, ok, State}
+
+    catch
+        {error, ErrorCode} ->
+            {reply, {error, ErrorCode}, State};
+        _Oops ->
+            {reply, {error, {?CIM_ERR_FAILED}}, State}
     end;
 
 %% CreateClass

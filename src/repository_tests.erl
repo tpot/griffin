@@ -371,3 +371,53 @@ create_class_test_() ->
                   repository:create_class(Pid, NS, Class)
                end)}
      end]}.
+
+%% Test DeleteClass operation
+
+delete_class_test_() ->
+    NS = "test",
+    {foreach,
+     fun() ->
+             {ok, Pid} = repository:start_link([]),
+           Pid
+     end,
+     fun(Pid) ->
+             repository:stop(Pid)
+     end,
+     [fun(Pid) ->
+              
+              %% Test class to be deleted does not exist
+
+              ClassName = "Griffin_Test",
+
+              {"Class must exist",
+
+               ?_assertEqual(
+                  {error, {?CIM_ERR_NOT_FOUND}},
+                  repository:delete_class(Pid, NS, ClassName)
+                 )}
+      end,
+      fun(Pid) ->
+
+              %% Test deleting a class with children fails
+
+              ClassName = "Griffin_Test",
+              SubclassName = "Griffin_Test2",
+
+              Class = #class{name = ClassName},
+              SubClass = #class{name = SubclassName, superclass = ClassName},
+
+              {"Deleting a class with subclasses fails",
+
+               ?_assertEqual(
+                  {error, {?CIM_ERR_CLASS_HAS_CHILDREN}},
+                  begin
+                      repository:create_class(Pid, NS, Class),
+                      repository:create_class(Pid, NS, SubClass),
+                      repository:delete_class(Pid, NS, ClassName)
+                  end)}
+      end]}.
+                  
+                  
+
+              
