@@ -347,8 +347,8 @@ create_class_test_() ->
 
               {"Superclass must exist",
                
-               ?_assertEqual(
-                  {error, {?CIM_ERR_INVALID_SUPERCLASS}},
+               ?_assertMatch(
+                  {error, {?CIM_ERR_INVALID_SUPERCLASS, _}},
                   begin
                       Class = #class{name = ClassName, superclass = "Foo"},
                       repository:create_class(Pid, NS, Class)
@@ -363,8 +363,8 @@ create_class_test_() ->
 
             {"Class does not already exist",
 
-             ?_assertEqual(
-               {error, {?CIM_ERR_ALREADY_EXISTS}},
+             ?_assertMatch(
+               {error, {?CIM_ERR_ALREADY_EXISTS, _}},
                begin
                   Class = #class{name = ClassName},
                   repository:create_class(Pid, NS, Class),
@@ -392,8 +392,8 @@ delete_class_test_() ->
 
               {"Class must exist",
 
-               ?_assertEqual(
-                  {error, {?CIM_ERR_NOT_FOUND}},
+               ?_assertMatch(
+                  {error, {?CIM_ERR_NOT_FOUND, _}},
                   repository:delete_class(Pid, NS, ClassName)
                  )}
       end,
@@ -409,8 +409,8 @@ delete_class_test_() ->
 
               {"Deleting a class with subclasses fails",
 
-               ?_assertEqual(
-                  {error, {?CIM_ERR_CLASS_HAS_CHILDREN}},
+               ?_assertMatch(
+                  {error, {?CIM_ERR_CLASS_HAS_CHILDREN, _}},
                   begin
                       repository:create_class(Pid, NS, Class),
                       repository:create_class(Pid, NS, SubClass),

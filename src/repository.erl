@@ -73,6 +73,52 @@ start_link(Options) ->
 stop(Pid) ->
     gen_server:call(Pid, stop).
 
+cim_error_string(Code) ->
+    case Code of
+        ?CIM_ERR_FAILED ->
+            "CIM_ERR_FAILED";
+        ?CIM_ERR_ACCESS_DENIED ->
+            "CIM_ERR_ACCESS_DENIED";
+        ?CIM_ERR_INVALID_NAMESPACE ->
+            "CIM_ERR_INVALID_NAMESPACE";
+        ?CIM_ERR_INVALID_PARAMETER ->
+            "CIM_ERR_INVALID_PARAMETER";
+        ?CIM_ERR_INVALID_CLASS ->
+            "CIM_ERR_INVALID_CLASS";
+        ?CIM_ERR_NOT_FOUND ->
+            "CIM_ERR_NOT_FOUND";
+        ?CIM_ERR_NOT_SUPPORTED ->
+            "CIM_ERR_NOT_SUPPORTED";
+        ?CIM_ERR_CLASS_HAS_CHILDREN ->
+            "CIM_ERR_CLASS_HAS_CHILDREN";
+        ?CIM_ERR_CLASS_HAS_INSTANCES ->
+            "CIM_ERR_CLASS_HAS_INSTANCES";
+        ?CIM_ERR_INVALID_SUPERCLASS ->
+            "CIM_ERR_INVALID_SUPERCLASS";
+        ?CIM_ERR_ALREADY_EXISTS ->
+            "CIM_ERR_ALREADY_EXISTS";
+        ?CIM_ERR_NO_SUCH_PROPERTY ->
+            "CIM_ERR_NO_SUCH_PROPERTY";
+        ?CIM_ERR_TYPE_MISMATCH ->
+            "CIM_ERR_TYPE_MISMATCH";
+        ?CIM_ERR_QUERY_LANGUAGE_NOT_SUPPORTED ->
+            "CIM_ERR_QUERY_LANGUAGE_NOT_SUPPORTED";
+        ?CIM_ERR_INVALID_QUERY ->
+            "CIM_ERR_INVALID_QUERY";
+        ?CIM_ERR_METHOD_NOT_AVAILABLE ->
+            "CIM_ERR_METHOD_NOT_AVAILABLE";
+        ?CIM_ERR_METHOD_NOT_FOUND ->
+            "CIM_ERR_METHOD_NOT_FOUND";
+        _ ->
+            io_lib:format("Error code ~d", [Code])
+    end.
+
+cim_error(Code) ->
+    {cim_error, {Code, cim_error_string(Code)}}.
+
+cim_error(Code, Msg) ->
+    {cim_error, {Code, Msg}}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% Wrappers to call dets or ets, depending on config
@@ -417,7 +463,7 @@ handle_call({deleteClass, NameSpace, ClassName}, _From, State) ->
 
         case class_exists(State, NameSpace, ClassName) of
             false ->
-                throw({error, {?CIM_ERR_NOT_FOUND}});
+                throw(cim_error(?CIM_ERR_NOT_FOUND));
             _ ->
                 ok
         end,
@@ -428,7 +474,7 @@ handle_call({deleteClass, NameSpace, ClassName}, _From, State) ->
             [] ->
                 ok;
             _ ->
-                throw({error, {?CIM_ERR_CLASS_HAS_CHILDREN}})
+                throw(cim_error(?CIM_ERR_CLASS_HAS_CHILDREN))
         end,
 
         %% Delete class from repository
@@ -437,16 +483,14 @@ handle_call({deleteClass, NameSpace, ClassName}, _From, State) ->
             ok ->
                 ok;
             {error, Reason} ->
-                throw({error, {?CIM_ERR_FAILED, Reason}})
+                throw(cim_error(?CIM_ERR_FAILED, Reason))
         end,
 
         {reply, ok, State}
 
     catch
-        {error, ErrorCode} ->
-            {reply, {error, ErrorCode}, State};
-        _Oops ->
-            {reply, {error, {?CIM_ERR_FAILED}}, State}
+        {cim_error, ErrorCode} ->
+            {reply, {error, ErrorCode}, State}
     end;
 
 %% CreateClass
@@ -460,7 +504,7 @@ handle_call({createClass, NameSpace, NewClass}, _From, State) ->
 
         case class_exists(State, NameSpace, NewClass#class.name) of
             true ->
-                throw({error, {?CIM_ERR_ALREADY_EXISTS}});
+                throw(cim_error(?CIM_ERR_ALREADY_EXISTS));
             false ->
                 ok
         end,
@@ -476,7 +520,7 @@ handle_call({createClass, NameSpace, NewClass}, _From, State) ->
                     [{_, _Superclass}] ->
                         ok;
                     _ ->
-                        throw({error, {?CIM_ERR_INVALID_SUPERCLASS}})
+                        throw(cim_error(?CIM_ERR_INVALID_SUPERCLASS))
                 end
         end,
         
@@ -501,14 +545,12 @@ handle_call({createClass, NameSpace, NewClass}, _From, State) ->
             ok ->
                 {reply, ok, State};
             {error, Reason} ->
-                {reply, {error, {?CIM_ERR_FAILED, Reason}}, State}
+                throw(cim_error(?CIM_ERR_FAILED))
         end
         
     catch
-        {error, ErrorCode} ->
-            {reply, {error, ErrorCode}, State};
-         _Oops ->
-            {reply, {error, {?CIM_ERR_FAILED}}, State}
+        {cim_error, ErrorCode} ->
+            {reply, {error, ErrorCode}, State}
     end;
 
 %% ModifyClass
