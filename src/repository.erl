@@ -523,8 +523,10 @@ handle_call({createClass, NameSpace, NewClass}, _From, State) ->
                             class_key(NameSpace, NewClass#class.superclass)) of
                     [{_, _Superclass}] ->
                         ok;
-                    _ ->
-                        throw(cim_error(?CIM_ERR_INVALID_SUPERCLASS))
+                    [] ->
+                        throw(cim_error(?CIM_ERR_INVALID_SUPERCLASS));
+                    {error, _} ->
+                        throw(cim_error(?CIM_ERR_FAILED))
                 end
         end,
         
