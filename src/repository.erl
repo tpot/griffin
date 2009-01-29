@@ -546,8 +546,7 @@ handle_call({createClass, NameSpace, NewClass}, _From, State) ->
         
         %% Add class to repository
         
-        case insert(State, 
-                    {class_key(NameSpace, NewClass), Value}) of
+        case insert(State, {class_key(NameSpace, NewClass), Value}) of
             ok ->
                 {reply, ok, State};
             {error, Reason} ->
@@ -646,19 +645,19 @@ handle_call({getQualifier, NameSpace, Name}, _From, State) ->
 handle_call({deleteQualifier, NameSpace, Name}, _From, State) ->
     Key = qualdecl_key(NameSpace, Name),
     case lookup(State, Key) of
-	[{Key, _}] -> 
-	    case delete(State, Key) of
-		ok ->
-		    {reply, ok, State};
-		{error, Reason} ->
-		    {reply, {error, {?CIM_ERR_FAILED, Reason}}, State}
-	    end;
-	[] -> 
-	    Msg = io_lib:format("Qualifier ~s not found", [Name]),
-	    {reply, {error, {?CIM_ERR_NOT_FOUND, Msg}}, State};
-	{error, Reason} -> 
-	    Msg = io_lib:format("Qualifier lookup failed: ~s", [Reason]),
-	    {reply, {error, {?CIM_ERR_FAILED, Msg}}, State}
+        [{Key, _}] -> 
+            case delete(State, Key) of
+                ok ->
+                    {reply, ok, State};
+                {error, Reason} ->
+                    {reply, {error, {?CIM_ERR_FAILED, Reason}}, State}
+            end;
+        [] -> 
+            Msg = io_lib:format("Qualifier ~s not found", [Name]),
+            {reply, {error, {?CIM_ERR_NOT_FOUND, Msg}}, State};
+        {error, Reason} -> 
+            Msg = io_lib:format("Qualifier lookup failed: ~s", [Reason]),
+            {reply, {error, {?CIM_ERR_FAILED, Msg}}, State}
     end;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
