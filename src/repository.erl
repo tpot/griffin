@@ -110,7 +110,7 @@ cim_error_string(Code) ->
         ?CIM_ERR_METHOD_NOT_FOUND ->
             "CIM_ERR_METHOD_NOT_FOUND";
         _ ->
-            io_lib:format("Error code ~d", [Code])
+            io_lib:format("Error code ~s", [Code])
     end.
 
 cim_error(Code) ->
@@ -541,7 +541,7 @@ handle_call({createClass, NameSpace, NewClass}, _From, State) ->
             ok ->
                 {reply, ok, State};
             {error, Reason} ->
-                throw(cim_error(?CIM_ERR_FAILED))
+                throw(cim_error(?CIM_ERR_FAILED, Reason))
         end
         
     catch
