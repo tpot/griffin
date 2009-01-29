@@ -595,11 +595,37 @@ handle_call({enumerateClasses, NameSpace, ClassName, DeepInheritance,
 
 handle_call({enumerateClassNames, NameSpace, ClassName, DeepInheritance},
             _From, State) ->
-    ClassNames = 
-        internal_get_subclasses(State, NameSpace, ClassName, DeepInheritance),
-    {reply, 
-     {ok, lists:map(fun(C) -> #classname{name = C} end, ClassNames)},
-     State};
+    try
+
+        %% Check basis class exists
+
+        case ClassName of
+            undefined ->
+                ok;
+            _ ->
+                case lookup(State, class_key(NameSpace, ClassName)) of
+                    [{_, _}] ->
+                        ok;
+                    [] ->
+                        throw(cim_error(?CIM_ERR_INVALID_CLASS));
+                    {error, _} ->
+                        throw(cim_error(?CIM_ERR_FAILED))
+                end
+        end,
+
+        %% Return enumeration
+
+        ClassNames = internal_get_subclasses(
+                       State, NameSpace, ClassName, DeepInheritance),
+
+        {reply, 
+         {ok, lists:map(fun(C) -> #classname{name = C} end, ClassNames)},
+         State}
+
+    catch
+        {cim_error, ErrorCode} ->
+            {reply, {error, ErrorCode}, State}
+    end;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

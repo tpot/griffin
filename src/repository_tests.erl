@@ -134,9 +134,21 @@ enumerate_class_names_test_() ->
      end,
      [fun(Pid) -> 
 
+              %% Misc tests
+
+              [{"empty repository",
+                ?_assertEqual(
+                   [],
+                   repository:enumerate_class_names(Pid, "foo"))},
+
+               {"non-existent basis class",
+                ?_assertMatch(
+                   {error, {?CIM_ERR_INVALID_CLASS, _}},
+                   repository:enumerate_class_names(Pid, NS, "foo"))},
+
               %% Test 2-ary function (ClassName = null, DeepInheritance = false)
 
-              [{"enumerate_class_names/2",
+               {"enumerate_class_names/2",
                 ?_assertEqual(
                    [ClassNameFoo],
                    repository:enumerate_class_names(Pid, NS))},
@@ -417,7 +429,3 @@ delete_class_test_() ->
                       repository:delete_class(Pid, NS, ClassName)
                   end)}
       end]}.
-                  
-                  
-
-              
