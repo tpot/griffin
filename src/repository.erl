@@ -415,7 +415,6 @@ handle_call(stop, _From, State) ->
 
 handle_call({getClass, NameSpace, ClassName, LocalOnly, _IncludeQualifiers,
              _IncludeClassOrigin, _PropertyList}, _From, State) ->
-    error_logger:info_msg("getClass ~s:~s~n", [NameSpace, ClassName]),
     ClassList = case LocalOnly of
                     true ->
                         [];
@@ -456,7 +455,6 @@ handle_call({getClass, NameSpace, ClassName, LocalOnly, _IncludeQualifiers,
 %% DeleteClass
 
 handle_call({deleteClass, NameSpace, ClassName}, _From, State) ->
-    error_logger:info_msg("deleteClass ~s:~s~n", [NameSpace, ClassName]),
     try
 
         %% Check class exists
@@ -496,8 +494,6 @@ handle_call({deleteClass, NameSpace, ClassName}, _From, State) ->
 %% CreateClass
 
 handle_call({createClass, NameSpace, NewClass}, _From, State) ->
-    error_logger:info_msg("createClass ~s:~s~n", 
-                          [NameSpace, NewClass#class.name]),
     try
         
         %% Check class does not already exists
@@ -556,8 +552,6 @@ handle_call({createClass, NameSpace, NewClass}, _From, State) ->
 %% ModifyClass
 
 handle_call({modifyClass, NameSpace, ModifiedClass}, _From, State) ->
-    error_logger:info_msg("modifyClass ~s:~s~n",
-                          [NameSpace, ModifiedClass#class.name]),
     Key = class_key(NameSpace, ModifiedClass),
     case lookup(State, Key) of
         [{Key, _}] ->
@@ -580,8 +574,6 @@ handle_call({modifyClass, NameSpace, ModifiedClass}, _From, State) ->
 handle_call({enumerateClasses, NameSpace, ClassName, DeepInheritance,
              _LocalOnly, _IncludeQualifiers, _IncludeClassOrigin}, 
             _From, State) ->
-    error_logger:info_msg("enumerateClasses ~s:~s Deep=~s~n", 
-                          [NameSpace, ClassName, DeepInheritance]),
     ClassNames = 
         internal_get_subclasses(State, NameSpace, ClassName, DeepInheritance),
     Classes = [case lookup(State, class_key(NameSpace, CN)) of
@@ -594,8 +586,6 @@ handle_call({enumerateClasses, NameSpace, ClassName, DeepInheritance,
 
 handle_call({enumerateClassNames, NameSpace, ClassName, DeepInheritance},
             _From, State) ->
-    error_logger:info_msg("enumerateClassNames ~s:~s:~p~n", 
-                          [NameSpace, ClassName, DeepInheritance]),
     ClassNames = 
         internal_get_subclasses(State, NameSpace, ClassName, DeepInheritance),
     {reply, 
@@ -607,9 +597,6 @@ handle_call({enumerateClassNames, NameSpace, ClassName, DeepInheritance},
 %% SetQualifier
 
 handle_call({setQualifier, NameSpace, QualifierDeclaration}, _From, State) ->
-    error_logger:info_msg(
-      "setQualifier ~s:~s~n", 
-      [NameSpace, QualifierDeclaration#qualifier_declaration.name]),
     Key = qualdecl_key(NameSpace, QualifierDeclaration),
     case insert(State, {Key, QualifierDeclaration}) of
         ok ->
@@ -621,7 +608,6 @@ handle_call({setQualifier, NameSpace, QualifierDeclaration}, _From, State) ->
 %% EnumerateQualifiers
 
 handle_call({enumerateQualifiers, NameSpace}, _From, State) ->
-    error_logger:info_msg("enumerateQualifiers ~s~n", [NameSpace]),
     Result = foldl(
            State,    
 	       fun(Object, Acc) -> 
@@ -635,7 +621,6 @@ handle_call({enumerateQualifiers, NameSpace}, _From, State) ->
 %% GetQualifier
 
 handle_call({getQualifier, NameSpace, Name}, _From, State) ->
-    error_logger:info_msg("getQualifier ~s:~s~n", [NameSpace, Name]),
     case lookup(State, qualdecl_key(NameSpace, Name)) of
         [{_Key, Value}] -> 
             {reply, {ok, Value}, State};
@@ -649,7 +634,6 @@ handle_call({getQualifier, NameSpace, Name}, _From, State) ->
 %% DeleteQualifier
 
 handle_call({deleteQualifier, NameSpace, Name}, _From, State) ->
-    error_logger:info_msg("deleteQualifier ~s:~s~n", [NameSpace, Name]),
     Key = qualdecl_key(NameSpace, Name),
     case lookup(State, Key) of
 	[{Key, _}] -> 
@@ -673,7 +657,6 @@ handle_call({deleteQualifier, NameSpace, Name}, _From, State) ->
 
 handle_call({getSubclasses, NameSpace, ClassName, DeepInheritance}, 
             _From, State) ->
-    error_logger:info_msg("getSubclasses ~s:~s~n", [NameSpace, ClassName]),
     Result = 
         internal_get_subclasses(State, NameSpace, ClassName, DeepInheritance),
     {reply, {ok, Result}, State};
@@ -683,7 +666,6 @@ handle_call({getSubclasses, NameSpace, ClassName, DeepInheritance},
 %% Return true if a class is a subclass of a base class
 
 handle_call({isa, NameSpace, ClassName, BaseClass}, _From, State) ->
-    error_logger:info_msg("isa ~s:~s ~s~n", [NameSpace, ClassName, BaseClass]),
     SubClasses = [BaseClass] ++
         internal_get_subclasses(State, NameSpace, BaseClass, true),
     {reply, {ok, lists:member(ClassName, SubClasses)}, State};
