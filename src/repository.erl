@@ -356,8 +356,10 @@ class_exists(Table, NameSpace, ClassOrClassName) ->
     case lookup(Table, class_key(NameSpace, ClassOrClassName)) of
         [{_, _}] ->
             true;
-        _ ->
-            false
+        [] ->
+            false;
+        {error, Reason} ->
+            {error, Reason}
     end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -455,15 +457,18 @@ handle_call({getClass, NameSpace, ClassName, LocalOnly, _IncludeQualifiers,
 %% DeleteClass
 
 handle_call({deleteClass, NameSpace, ClassName}, _From, State) ->
+
     try
 
         %% Check class exists
 
         case class_exists(State, NameSpace, ClassName) of
+            true ->
+                ok;
             false ->
                 throw(cim_error(?CIM_ERR_NOT_FOUND));
-            _ ->
-                ok
+            {error, _} ->
+                throw(cim_error(?CIM_ERR_FAILED))
         end,
 
         %% Check class has no children
@@ -480,8 +485,8 @@ handle_call({deleteClass, NameSpace, ClassName}, _From, State) ->
         case delete(State, class_key(NameSpace, ClassName)) of
             ok ->
                 ok;
-            {error, Reason} ->
-                throw(cim_error(?CIM_ERR_FAILED, Reason))
+            {error, _} ->
+                throw(cim_error(?CIM_ERR_FAILED))
         end,
 
         {reply, ok, State}
@@ -494,6 +499,7 @@ handle_call({deleteClass, NameSpace, ClassName}, _From, State) ->
 %% CreateClass
 
 handle_call({createClass, NameSpace, NewClass}, _From, State) ->
+
     try
         
         %% Check class does not already exists
@@ -502,7 +508,9 @@ handle_call({createClass, NameSpace, NewClass}, _From, State) ->
             true ->
                 throw(cim_error(?CIM_ERR_ALREADY_EXISTS));
             false ->
-                ok
+                ok;
+            {error, _} ->
+                throw(cim_error(?CIM_ERR_FAILED))
         end,
 
         %% Check superclass exists
