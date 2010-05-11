@@ -429,3 +429,29 @@ delete_class_test_() ->
                       repository:delete_class(Pid, NS, ClassName)
                   end)}
       end]}.
+
+%% Test GetClass operation
+
+get_class_test_() ->
+    NS = "test",
+    {foreach,
+     fun() ->
+             {ok, Pid} = repository:start_link([]),
+           Pid
+     end,
+     fun(Pid) ->
+             repository:stop(Pid)
+     end,
+     [fun(Pid) ->
+              
+              %% Test class to be fetched does not exist
+
+              ClassName = "Griffin_Test",
+
+              {"Class must exist",
+
+               ?_assertMatch(
+                  {error, {?CIM_ERR_NOT_FOUND, _}},
+                  get_class(Pid, NS, ClassName)
+                 )}
+      end]}.

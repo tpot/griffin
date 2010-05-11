@@ -417,47 +417,65 @@ handle_call(stop, _From, State) ->
 
 handle_call({getClass, NameSpace, ClassName, LocalOnly, _IncludeQualifiers,
              _IncludeClassOrigin, _PropertyList}, _From, State) ->
-    ClassList = case LocalOnly of
-                    true ->
-                        [];
-                    false ->
-                        internal_get_superclasses(State, NameSpace, ClassName)
-                end ++ [ClassName],
-    Result = lists:foldl(
-               fun(SubclassName, Acc) ->
-                       case lookup(State, class_key(NameSpace, SubclassName)) of
-                           [{_, Subclass}] ->
-                               Acc#class{
-                                 name = Subclass#class.name,
-                                 superclass = Subclass#class.superclass,
-                                 properties = 
-                                   lists:append(Acc#class.properties,
-                                                Subclass#class.properties),
-                                 methods =
-                                   lists:append(Acc#class.methods,
-                                                Subclass#class.methods),
-                                 qualifiers =
-                                   lists:append(Acc#class.qualifiers,
-                                                Subclass#class.qualifiers)};
-                           _ ->
-                               Acc
-                       end
-               end, 
-               #class{},
-               ClassList),
-    {reply, 
-     case Result#class.name of 
-         undefined ->
-             {error, {?CIM_ERR_NOT_FOUND}};
-         _ ->
-             {ok, Result}
-     end,
-     State};
+
+    try
+
+        %% Check class exists
+
+         case class_exists(State, NameSpace, ClassName) of
+             true ->
+                 ok;
+             false ->
+                 throw(cim_error(?CIM_ERR_NOT_FOUND));
+             {error, _} ->
+                 throw(cim_error(?CIM_ERR_FAILED))
+         end,
+
+        %% Fetch class from repository
+        
+        ClassList = case LocalOnly of
+                        true ->
+                            [];
+                        false ->
+                            internal_get_superclasses(
+                              State, NameSpace, ClassName)
+                    end ++ [ClassName],
+        
+        Result = lists:foldl(
+                   fun(SubclassName, Acc) ->
+                           Key = class_key(NameSpace, SubclassName),
+                           case lookup(State, Key) of
+                               [{_, Subclass}] ->
+                                   Acc#class{
+                                     name = Subclass#class.name,
+                                     superclass = Subclass#class.superclass,
+                                     properties = 
+                                     lists:append(Acc#class.properties,
+                                                  Subclass#class.properties),
+                                     methods =
+                                     lists:append(Acc#class.methods,
+                                                  Subclass#class.methods),
+                                     qualifiers =
+                                     lists:append(Acc#class.qualifiers,
+                                                  Subclass#class.qualifiers)};
+                               {error, _} ->
+                                   throw(cim_error(?CIM_ERR_FAILED))
+                           end
+                   end, 
+                   #class{},
+                   ClassList),
+        
+        {reply, {ok, Result}, State}
+        
+    catch
+        {cim_error, ErrorCode} ->
+            {reply, {error, ErrorCode}, State}
+    end;
 
 %% DeleteClass
 
 handle_call({deleteClass, NameSpace, ClassName}, _From, State) ->
-
+    
     try
 
         %% Check class exists
